@@ -271,7 +271,7 @@ void printWifiStatus() {
 		}
 		strcat(replyBuffer,"#");
 		
-		if (SignBit) {															// Если температура отрицательная - добавим "минус"
+		if (SignBit) {														// Если температура отрицательная - добавим "минус"
 			strcat(replyBuffer,"-");
 		}
 		
