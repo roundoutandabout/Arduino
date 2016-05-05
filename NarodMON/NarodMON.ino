@@ -84,18 +84,18 @@ void setup()
 		//Serial.println();
 				
 		delay(2000);
-																					
+
 		if (WiFi.status() == WL_NO_SHIELD) {									// Проверим, есть ли шилд
 			Serial.println("WiFi shield not present");
 			while(true);														// Если нет - остановка
 		}
-																					
+	
 		while (status != WL_CONNECTED) {										// Соединяемся с сетью Wifi
 			Serial.print("Attempting to connect to SSID: ");
 			Serial.println(ssid);
 			status = WiFi.begin(ssid, pass);									// Соединение с сетью WPA/WPA2
 		}
-																					
+
 		delay(10000);															// 10 секунд для инициализации wifi;
    
 		lastConnectionTime = millis()-postingInterval+15000;					//первое соединение через 15 секунд после запуска
