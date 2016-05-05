@@ -106,16 +106,16 @@ void handle_root() {
     String out = "";
 
     out += base;
-    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br> Давление(атм.): " + String(pressure) + " мм.рт.ст.<br><hr><b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Ощущаемая температура: "+"String(hi)"+" &deg;C.<br><hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr><a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a>\n";
+    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br> Давление(атм.): " + String(pressure) + " мм.рт.ст.<br><hr><b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Ощущаемая температура: "+"String(hi)"+" &deg;C.<br><hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr>";
 
     if( ts_send ){
         out+="\
-          <span> - Sending enabled</span>\
+          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span> - Sending enabled</span>\
         ";
     }
     else {
         out+="\
-          <span> - Sending disabled</span>\
+          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span> - Sending disabled</span>\
         ";
     }
 
@@ -131,56 +131,7 @@ void handle_root() {
   if (ts_send) {
       digitalWrite(led12, 1);
 
-      Serial.print("connecting to ");
-      Serial.println(host);
-
-      // Use WiFiClient class to create TCP connections
-      WiFiClient client;
-      const int httpPort = 80;
-      if (!client.connect(host, httpPort)) {
-        Serial.println("connection failed");
-        return;
-      }
-
-      Serial.println("connected -)");
-      Serial.println("");
-      // Создаем URI для запроса
-      String url = "/update?key=";
-      url += apikey;
-      url += "&field1=";
-      url += temp180;
-      url += "&field2=";
-      url += pressure;
-      url += "&field3=";
-      url += h;
-      url += "&field4=";
-      url += t;
-      url += "&field5=";
-      url += raw;
-
-      Serial.print("Requesting URL: ");
-      Serial.print(host);
-      Serial.println(url);
-
-      // отправляем запрос на сервер
-      client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-                   "Host: " + host + "\r\n" +
-                   "Connection: close\r\n\r\n");
-      client.flush(); // ждем отправки всех данных
-
-      String lines = "";
-
-      // Read all the lines of the reply from server and print them to Serial
-      /*while (client.available()) {
-        String line = client.readStringUntil('\r');
-        lines += line + "<br>";
-        //char line = client.read();
-        Serial.print(line);
-      }*/
-
-      Serial.println();
-      Serial.println("closing connection");
-      Serial.println();
+      thingspeak_send();
 
       digitalWrite(led12, 0);
     }
