@@ -16,6 +16,8 @@ const char *password = "DustMyBroom";
 const char* host = "api.thingspeak.com";
 const char* apikey = "YIR58CFT1SIPMUJ0"; // ключик от thingsspeak.com
 
+char server[] = "narodmon.ru";
+
 const int led15 = 15; //red
 const int led13 = 13; //blue
 const int led12 = 12; //green
