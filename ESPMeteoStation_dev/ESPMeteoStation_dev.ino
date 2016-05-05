@@ -15,6 +15,7 @@ const char *password = "DustMyBroom";
 
 const char* host = "api.thingspeak.com";
 const char* apikey = "YIR58CFT1SIPMUJ0"; // ключик от thingsspeak.com
+String Hostname = "ESP18FE34D85AC2";
 
 const int led15 = 15; //red
 const int led13 = 13; //blue
@@ -178,7 +179,10 @@ void handle_root() {
 
       digitalWrite(led12, 0);
     }
-  //***************************
+	
+	//***************************
+	
+	narodmon_send(temp180, pressure);
   }
 }
 
@@ -209,6 +213,29 @@ void handle_services() {
   ";
 
   server.send(200, "text/html", out);
+}
+
+bool narodmon_send(float t, float p) {
+	
+	WiFiClient client;
+	String buf;
+	buf = "#" + Hostname + "\r\n"; // заголовок
+	buf += "#T1#" + String(t) + "\r\n";
+	buf += "#P1#" + String(p) + "\r\n";
+	buf += "##\r\n";
+	
+	if (!client.connect("narodmon.ru", 8283)) { // попытка подключения
+      Serial.println("connection failed");
+      return false; // не удалось;
+    } else
+    {
+      client.print(buf); // и отправляем данные
+      while (client.available()) {
+        String line = client.readStringUntil('\r'); // если что-то в ответ будет - все в Serial
+        Serial.print(line);      }
+    }
+	
+    return true; //ушло
 }
 
 void setup(void) {
