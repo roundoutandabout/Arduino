@@ -232,6 +232,9 @@ bool narodmon_send() {
 	buf = "#" + Hostname + "\r\n"; // заголовок
 	buf += "#T1#" + String(temp180) + "\r\n";
 	buf += "#P1#" + String(pressure) + "\r\n";
+	buf += "#T2#" + String(t) + "\r\n";
+	buf += "#H1#" + String(h) + "\r\n";
+	buf += "#L1#" + String(raw) + "\r\n";
 	buf += "##\r\n";
 	
 	if (!client.connect("narodmon.ru", 8283)) { // попытка подключения
