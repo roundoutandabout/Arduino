@@ -73,8 +73,8 @@ void handle_root() {
     float temp180 = 0;
 
     if (bmp.begin()) {
-      float pressure = (bmp.readPressure() / 133.3);
-      float temp180 = (bmp.readTemperature());
+      pressure = (bmp.readPressure() / 133.3);
+      temp180 = (bmp.readTemperature());
     }
   //***************************
   digitalWrite(led15, 1);
