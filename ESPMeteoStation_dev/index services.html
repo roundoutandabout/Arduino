@@ -1,0 +1,50 @@
+<!DOCTYPE html>\
+  <head>\
+    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\
+    <meta name=\"viewport\" content=\"width=400px\">\
+    <title>Wi-Fi ESP8266 Метеостанция</title>\
+    <style type=\"text/css\">\
+      body\{\
+        background-color: #7D8EE2;color:#FFF;\
+      }\
+      a \{\
+        color:#73B9FF;\
+      }\
+      .blockk \{\
+        border:solid 1px #2d2d2d;\
+        text-align:center;background:#0059B3;padding:10px 10px 10px 10px;\
+        -moz-border-radius: 5px;-webkit-border-radius: 5px;border-radius: 5px;}\
+      .blockk\{\
+        border:double 2px #000000;\
+        -moz-border-radius: 5px;\
+        -webkit-border-radius: 5px;\
+        border-radius: 5px;\
+      }\
+    </style>\
+    <style type=\"text/css\" media=\"(min-width: 810px)\">\
+      body \{
+          font-size:18px;\
+        }\
+      .blockk \{\
+          width: 400px;\
+        }
+    </style>\
+    <style type=\"text/css\" media=\"(max-width: 800px) and (orientation:landscape)\">\
+      body \{\
+        font-size:8px;\
+      }\
+    </style>\
+      <meta http-equiv=\"REFRESH\" content=\"60\"></head>\
+      <body>\
+        <center>\
+          <div class=\"blockk\"><span style=\"font-size: 25px\">Мини Метеостанция на ESP8266</span><br>\
+            <hr><form action=\"\" method=\"GET\">\
+                <input id=\"a\" type=\"checkbox\" name=\"tp-send\" value=\"1\"><label for=\"a\">Thingspeak</label>\
+                <input id=\"b\" type=\"checkbox\" name=\"nm-send\" value=\"1\"><label for=\"b\">Narodmon</label>\
+                <input id=\"c\" type=\"checkbox\" name=\"fm-send\" value=\"1\"><label for=\"c\">Flymon</label><br>\
+                <input type=\"submit\" id=\"\" value=\"Apply\"></input>\
+            </form>\
+            <hr></div>\
+        </center>\
+      </body>\
+</html>\
