@@ -14,8 +14,8 @@ bool    PowerOn  = false;
 // Имя хоста
 const char* host = "esp8266-power";
 // Вместо звездочек свои параметры WiFi сети
-const char* ssid = "paloma";
-const char* password = "0676805790";
+const char* ssid = "PC-Woody";
+const char* password = "DustMyBroom";
 
 ESP8266WebServer server(80);
 

@@ -10,8 +10,8 @@
 
 #include <Adafruit_BMP085.h>
 
-const char *ssid = "paloma";
-const char *password = "0676805790";
+const char *ssid = "PC-Woody";
+const char *password = "DustMyBroom";
 
 const char* host = "api.thingspeak.com";
 const char* apikey = "YIR58CFT1SIPMUJ0"; // ключик от thingsspeak.com
@@ -197,14 +197,6 @@ void setup(void)
   digitalWrite(led13, 0);
   digitalWrite(led12, 0);
 
-  Serial.begin(9600);
-  Wire.pins(0, 2);// устанавливаем пины SDA,SCL для i2c
-  if (!bmp.begin()) {
-    Serial.println("Could not find a valid BMP085 sensor, check wiring!");
-    while (1) {}
-  }
-
-  Serial.begin(115200);
   WiFi.begin ( ssid, password );
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -228,6 +220,12 @@ void setup(void)
   });*/
   server.begin();
   Serial.println("HTTP server started");
+
+  Wire.pins(0, 2);// устанавливаем пины SDA,SCL для i2c
+
+  if (!bmp.begin()) {
+    Serial.println("Could not find a valid BMP085 sensor, check wiring!");
+  }
 
 }
 

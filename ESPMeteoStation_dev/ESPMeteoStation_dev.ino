@@ -10,8 +10,8 @@
 
 #include <Adafruit_BMP085.h>
 
-const char *ssid = "paloma";
-const char *password = "0676805790";
+const char *ssid = "PC-Woody";
+const char *password = "DustMyBroom";
 
 const char* host = "api.thingspeak.com";
 const char* apikey = "YIR58CFT1SIPMUJ0"; // ключик от thingsspeak.com
@@ -25,13 +25,29 @@ int raw = 0;
 unsigned long previousMillis = 0;        // will store last temp was read
 const long interval = 2000;              // interval at which to read sensor
 
-Adafruit_BMP085 bmp;
 ESP8266WebServer server ( 80 );
 
+Adafruit_BMP085 bmp;
 DHT dht(DHTPIN, DHTTYPE, 15);
 // Note that older versions of this library took an optional third parameter to
 // tweak the timings for faster processors.  This parameter is no longer needed
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
+
+String base = "<!DOCTYPE html>\
+        <head>\
+          <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\
+          <meta name=\"viewport\" content=\"width=400px\">\
+          <title>Wi-Fi ESP8266 Метеостанция</title>\
+          <style type=\"text/css\">body\{background-color: #7D8EE2;color:#FFF;}\
+            a \{color: white;}\
+            .blockk \{border:solid 1px #2d2d2d;\
+                      text-align:center;background:#0059B3;padding:10px 10px 10px 10px;\
+                      -moz-border-radius: 5px;-webkit-border-radius: 5px;border-radius: 5px;}"
+            ".blockk{border:double 2px #000000;-moz-border-radius: 5px;-webkit-border-radius: 5px;border-radius: 5px;}"
+            "</style><style type=\"text/css\" media=\'(min-width: 810px)\'>body\{font-size:18px;}.blockk \{width: 400px;}</style>"
+            "<style type=\"text/css\" media=\'(max-width: 800px) and (orientation:landscape)\'>body\{font-size:8px;}</style><meta http-equiv=\"REFRESH\" content=\"600\"></head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">ESP8266 Weather Station</span><br><hr>";
+
+bool ts_send  = false;
 
 void handle_root() {
 
@@ -41,51 +57,41 @@ void handle_root() {
     // save the last time you read the sensor
     previousMillis = currentMillis;
 
-    bool send  = false;
-
-      if( server.hasArg("send") ){
-         if( strncmp(server.arg("send").c_str(),"1",1) == 0 ) send = true;
-      }
-      else {
-        send = false;
+      if( server.hasArg("ts-send") ){
+         if( strncmp(server.arg("ts-send").c_str(),"1",1) == 0 ) ts_send = true;
+         else {
+           if( strncmp(server.arg("ts-send").c_str(),"0",1) == 0 ) ts_send = false;
+         }
       }
 
     raw = analogRead( pinPhoto );
 
   //***************************
 
-    /*Serial.print("Temperature = ");
-    Serial.print(bmp.readTemperature());
-    Serial.println(" *C");*/
 
-    /*Serial.print("Pressure = ");
-    Serial.print(bmp.readPressure() / 133.3);
-    Serial.println(" mm");*/
+    float pressure = 0;
+    float temp180 = 0;
 
-    float pressure = (bmp.readPressure() / 133.3);
-    float temp180 = (bmp.readTemperature());
-
+    if (bmp.begin()) {
+      float pressure = (bmp.readPressure() / 133.3);
+      float temp180 = (bmp.readTemperature());
+    }
   //***************************
   digitalWrite(led15, 1);
 
   float h;
   float t;
 
-  do
-  {
-    delay(50);
-    h = dht.readHumidity();
-    // Read temperature as Celsius
-    t = dht.readTemperature();
-    //float hi = dht.computeHeatIndex(t, h, false);
-  } while(isnan(h) || isnan(t));
+  h = dht.readHumidity();
+  // Read temperature as Celsius
+  t = dht.readTemperature();
+  //float hi = dht.computeHeatIndex(t, h, false);
+  //float ti = ((hi-32)/2)+(((hi-32)/2)/10);
 
-    /*if (isnan(h) || isnan(t)) {
-      Serial.println("Failed to read from DHT sensor!");
-      return;
-    }*/
-
-    /*float ti = ((hi-32)/2)+(((hi-32)/2)/10);*/
+  if (isnan(t) || isnan(h)) {
+    h = 0;
+    t = 0;
+  }
 
   digitalWrite(led15, 0);
   //***************************
@@ -93,33 +99,22 @@ void handle_root() {
 
     String out = "";
 
-    out = "<!DOCTYPE html>\
-            <head>\
-              <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\
-              <meta name=\"viewport\" content=\"width=400px\">\
-              <title>Wi-Fi ESP8266 Метеостанция</title>\
-              <style type=\"text/css\">body\{background-color: #7D8EE2;color:#FFF;}\
-                a \{color:#73B9FF;}\
-                .blockk \{border:solid 1px #2d2d2d;\
-                          text-align:center;background:#0059B3;padding:10px 10px 10px 10px;\
-                          -moz-border-radius: 5px;-webkit-border-radius: 5px;border-radius: 5px;}"
-                ".blockk{border:double 2px #000000;-moz-border-radius: 5px;-webkit-border-radius: 5px;border-radius: 5px;}"
-                "</style><style type=\"text/css\" media=\'(min-width: 810px)\'>body\{font-size:18px;}.blockk \{width: 400px;}</style>"
-                "<style type=\"text/css\" media=\'(max-width: 800px) and (orientation:landscape)\'>body\{font-size:8px;}</style><meta http-equiv=\"REFRESH\" content=\"60\"></head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">Мини Метеостанция на ESP8266</span><br><hr><b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br> Давление(атм.): " + String(pressure) + " мм.рт.ст.<br><hr><b>DHT11:</b><br>Температура: " + String(t) + " &deg;C. Влажность (отн.): "+String(h)+" %.<br>Ощущаемая температура: "+"String(hi)"+" &deg;C.<br><hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr><a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\" style=\"color: white\"><b>Thingspeak.com</b></a><br>\n";
+    out += base;
+    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br> Давление(атм.): " + String(pressure) + " мм.рт.ст.<br><hr><b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Ощущаемая температура: "+"String(hi)"+" &deg;C.<br><hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr><a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a>\n";
 
-    if( send ){
+    if( ts_send ){
         out+="\
-          <a href=\"/?send=0\"><button>Отключить передачу</button></a>\
+          <span> - Sending enabled</span>\
         ";
     }
     else {
         out+="\
-          <a href=\"/?send=1\"><button>Включить передачу</button></a>\
+          <span> - Sending disabled</span>\
         ";
     }
 
     out+="\
-      <br><hr></div></center></body></html>\
+      <hr><a href=\"/services\">Отправка на сервисы</a><br><hr></div></center></body></html>\
     ";
 
     //Веб сервер
@@ -127,7 +122,7 @@ void handle_root() {
 
     digitalWrite(led13, 0);
   //***************************
-  if (send) {
+  if (ts_send) {
       digitalWrite(led12, 1);
 
       Serial.print("connecting to ");
@@ -187,8 +182,37 @@ void handle_root() {
   }
 }
 
-void setup(void)
-{
+void handle_services() {
+
+  String out = "";
+
+  out += base;
+  out +="<form action=\"/\" method=\"GET\">\
+                <div style=\"display: inline-block; text-align:left\">\
+                  <span>Thingspeak:</span><br>\
+                  <span>Narodmon:</span><br>\
+                  <span>Flymon:</span>\
+                </div>\
+                    <div style=\"display: inline-block\">\
+                    <input id=\"a1\" type=\"radio\" name=\"ts-send\" value=\"1\"><label for=\"a1\">Yes</label>\
+                    <input id=\"a0\" type=\"radio\" name=\"ts-send\" value=\"0\"><label for=\"a0\">No</label><br>\
+                    <input id=\"b1\" type=\"radio\" name=\"nm-send\" value=\"1\"><label for=\"b1\">Yes</label>\
+                    <input id=\"b0\" type=\"radio\" name=\"nm-send\" value=\"0\"><label for=\"b0\">No</label><br>\
+                    <input id=\"c1\" type=\"radio\" name=\"fm-send\" value=\"1\"><label for=\"c1\">Yes</label>\
+                    <input id=\"c0\" type=\"radio\" name=\"fm-send\" value=\"0\"><label for=\"c0\">No</label></div><br>\
+                  <input type=\"submit\" id=\"\" value=\"Apply\"></input>\
+              </form>\
+              <hr><a href=\"/\">Back</a><hr></div>\
+          </center>\
+        </body>\
+  </html>\
+  ";
+
+  server.send(200, "text/html", out);
+}
+
+void setup(void) {
+
   Serial.begin(115200);
   pinMode(led15, OUTPUT);
   pinMode(led13, OUTPUT);
@@ -197,14 +221,6 @@ void setup(void)
   digitalWrite(led13, 0);
   digitalWrite(led12, 0);
 
-  Serial.begin(9600);
-  Wire.pins(0, 2);// устанавливаем пины SDA,SCL для i2c
-  if (!bmp.begin()) {
-    Serial.println("Could not find a valid BMP085 sensor, check wiring!");
-    while (1) {}
-  }
-
-  Serial.begin(115200);
   WiFi.begin ( ssid, password );
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -218,16 +234,28 @@ void setup(void)
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
+  Serial.print("mac address: ");
+  Serial.println(WiFi.macAddress());
+
   if ( MDNS.begin ( "esp8266" ) ) {
     Serial.println ( "MDNS responder started" );
   }
 
   server.on("/", handle_root);
+  server.on("/services", handle_services);
   /*server.on("/inline", []() {
     server.send(200, "text/plain", "this works as well");
   });*/
   server.begin();
   Serial.println("HTTP server started");
+
+  Wire.pins(0, 2);// устанавливаем пины SDA,SCL для i2c
+
+  if (!bmp.begin()) {
+    Serial.println("Could not find a valid BMP085 sensor, check wiring!");
+  }
+
+  dht.begin();
 
 }
 
