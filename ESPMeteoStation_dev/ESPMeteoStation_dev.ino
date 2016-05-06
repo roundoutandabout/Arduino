@@ -21,10 +21,17 @@ const int led15 = 15; //red
 const int led13 = 13; //blue
 const int led12 = 12; //green
 const int pinPhoto = A0;
-int raw = 0;
 
 unsigned long previousMillis = 0;        // will store last temp was read
 const long interval = 2000;              // interval at which to read sensor
+
+int raw = 0; // Photoresistor
+
+float h; // Values for DHT11
+float t;
+
+float pressure; // values for BMP180
+float temp180;
 
 ESP8266WebServer server ( 80 );
 
@@ -80,9 +87,7 @@ void handle_root() {
   //***************************
   digitalWrite(led15, 1);
 
-  float h;
-  float t;
-
+  
   h = dht.readHumidity();
   // Read temperature as Celsius
   t = dht.readTemperature();
@@ -101,16 +106,16 @@ void handle_root() {
     String out = "";
 
     out += base;
-    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br> Давление(атм.): " + String(pressure) + " мм.рт.ст.<br><hr><b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Ощущаемая температура: "+"String(hi)"+" &deg;C.<br><hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr><a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a>\n";
+    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br> Давление(атм.): " + String(pressure) + " мм.рт.ст.<br><hr><b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Ощущаемая температура: "+"String(hi)"+" &deg;C.<br><hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr>";
 
     if( ts_send ){
         out+="\
-          <span> - Sending enabled</span>\
+          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span> - Sending enabled</span>\
         ";
     }
     else {
         out+="\
-          <span> - Sending disabled</span>\
+          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span> - Sending disabled</span>\
         ";
     }
 
@@ -126,63 +131,14 @@ void handle_root() {
   if (ts_send) {
       digitalWrite(led12, 1);
 
-      Serial.print("connecting to ");
-      Serial.println(host);
-
-      // Use WiFiClient class to create TCP connections
-      WiFiClient client;
-      const int httpPort = 80;
-      if (!client.connect(host, httpPort)) {
-        Serial.println("connection failed");
-        return;
-      }
-
-      Serial.println("connected -)");
-      Serial.println("");
-      // Создаем URI для запроса
-      String url = "/update?key=";
-      url += apikey;
-      url += "&field1=";
-      url += temp180;
-      url += "&field2=";
-      url += pressure;
-      url += "&field3=";
-      url += h;
-      url += "&field4=";
-      url += t;
-      url += "&field5=";
-      url += raw;
-
-      Serial.print("Requesting URL: ");
-      Serial.print(host);
-      Serial.println(url);
-
-      // отправляем запрос на сервер
-      client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-                   "Host: " + host + "\r\n" +
-                   "Connection: close\r\n\r\n");
-      client.flush(); // ждем отправки всех данных
-
-      String lines = "";
-
-      // Read all the lines of the reply from server and print them to Serial
-      /*while (client.available()) {
-        String line = client.readStringUntil('\r');
-        lines += line + "<br>";
-        //char line = client.read();
-        Serial.print(line);
-      }*/
-
-      Serial.println();
-      Serial.println("closing connection");
-      Serial.println();
+      thingspeak_send();
 
       digitalWrite(led12, 0);
     }
 	
 	//***************************
 	
-	narodmon_send(temp180, pressure);
+	narodmon_send();
   }
 }
 
@@ -215,13 +171,70 @@ void handle_services() {
   server.send(200, "text/html", out);
 }
 
-bool narodmon_send(float t, float p) {
+bool thingspeak_send() {
+	Serial.print("connecting to ");
+      Serial.println(host);
+
+      // Use WiFiClient class to create TCP connections
+      WiFiClient client;
+      const int httpPort = 80;
+      if (!client.connect(host, httpPort)) {
+        Serial.println("connection failed");
+        return false;
+      }
+
+      Serial.println("connected -)");
+      Serial.println("");
+      // Создаем URI для запроса
+      String url = "/update?key=";
+      url += apikey;
+      url += "&field1=";
+      url += temp180;
+      url += "&field2=";
+      url += pressure;
+      url += "&field3=";
+      url += h;
+      url += "&field4=";
+      url += t;
+      url += "&field5=";
+      url += raw;
+
+      Serial.print("Requesting URL: ");
+      Serial.print(host);
+      Serial.println(url);
+
+      // отправляем запрос на сервер
+      client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+                   "Host: " + host + "\r\n" +
+                   "Connection: close\r\n\r\n");
+      client.flush(); // ждем отправки всех данных
+
+      /*String lines = "";
+
+      // Read all the lines of the reply from server and print them to Serial
+      while (client.available()) {
+        String line = client.readStringUntil('\r');
+        lines += line + "<br>";
+        //char line = client.read();
+        Serial.print(line);
+      }
+
+      Serial.println();
+      Serial.println("closing connection");
+      Serial.println();*/
+	  return true;
+}
+
+bool narodmon_send() {
 	
 	WiFiClient client;
 	String buf;
 	buf = "#" + Hostname + "\r\n"; // заголовок
-	buf += "#T1#" + String(t) + "\r\n";
-	buf += "#P1#" + String(p) + "\r\n";
+	buf += "#T1#" + String(temp180) + "\r\n";
+	buf += "#P1#" + String(pressure) + "\r\n";
+	buf += "#T2#" + String(t) + "\r\n";
+	buf += "#H1#" + String(h) + "\r\n";
+	buf += "#L1#" + String(raw) + "\r\n";
 	buf += "##\r\n";
 	
 	if (!client.connect("narodmon.ru", 8283)) { // попытка подключения
