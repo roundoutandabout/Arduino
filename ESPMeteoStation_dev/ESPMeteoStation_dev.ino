@@ -56,6 +56,7 @@ String base = "<!DOCTYPE html>\
             "<style type=\"text/css\" media=\'(max-width: 800px) and (orientation:landscape)\'>body\{font-size:8px;}</style><meta http-equiv=\"REFRESH\" content=\"600\"></head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">ESP8266 Weather Station</span><br><hr>";
 
 bool ts_send  = false;
+bool nm_send  = false;
 
 void handle_root() {
 
@@ -65,12 +66,19 @@ void handle_root() {
     // save the last time you read the sensor
     previousMillis = currentMillis;
 
-      if( server.hasArg("ts-send") ){
-         if( strncmp(server.arg("ts-send").c_str(),"1",1) == 0 ) ts_send = true;
-         else {
-           if( strncmp(server.arg("ts-send").c_str(),"0",1) == 0 ) ts_send = false;
-         }
-      }
+	if( server.hasArg("ts-send") ){
+		if( strncmp(server.arg("ts-send").c_str(),"1",1) == 0 ) ts_send = true;
+		else {
+			if( strncmp(server.arg("ts-send").c_str(),"0",1) == 0 ) ts_send = false;
+		}
+	}
+	
+	if( server.hasArg("nm-send") ){
+		if( strncmp(server.arg("nm-send").c_str(),"1",1) == 0 ) nm_send = true;
+		else {
+			if( strncmp(server.arg("nm-send").c_str(),"0",1) == 0 ) nm_send = false;
+		}
+	}
 
     raw = analogRead( pinPhoto );
 
@@ -110,12 +118,23 @@ void handle_root() {
 
     if( ts_send ){
         out+="\
-          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span> - Sending enabled</span>\
+          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span> - Sending enabled</span><hr>\
         ";
     }
     else {
         out+="\
-          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span> - Sending disabled</span>\
+          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span> - Sending disabled</span><hr>\
+        ";
+    }
+	
+	if( nm_send ){
+        out+="\
+          <a href=\"http://narodmon.ru/\" target=\"_blank\"><b>Narodmon.com</b></a><span> - Sending enabled</span>\
+        ";
+    }
+    else {
+        out+="\
+          <a href=\"http://narodmon.ru/\" target=\"_blank\"><b>Narodmon.com</b></a><span> - Sending disabled</span>\
         ";
     }
 
@@ -128,17 +147,25 @@ void handle_root() {
 
     digitalWrite(led13, 0);
   //***************************
-  if (ts_send) {
-      digitalWrite(led12, 1);
+	if (ts_send) {
+		digitalWrite(led12, 1);
 
-      thingspeak_send();
+		thingspeak_send();
 
-      digitalWrite(led12, 0);
-    }
+		digitalWrite(led12, 0);
+	}
 	
 	//***************************
+	delay(200);
 	
-	narodmon_send();
+	if (nm_send) {
+		digitalWrite(led12, 1);
+
+		narodmon_send();
+
+		digitalWrite(led12, 0);
+	}
+	
   }
 }
 
@@ -173,50 +200,50 @@ void handle_services() {
 
 bool thingspeak_send() {
 	Serial.print("connecting to ");
-      Serial.println(host);
+	Serial.println(host);
 
-      // Use WiFiClient class to create TCP connections
-      WiFiClient client;
-      const int httpPort = 80;
-      if (!client.connect(host, httpPort)) {
-        Serial.println("connection failed");
-        return false;
-      }
+	// Use WiFiClient class to create TCP connections
+	WiFiClient client;
+	const int httpPort = 80;
+	if (!client.connect(host, httpPort)) {
+		Serial.println("connection failed");
+		return false;
+	}
 
-      Serial.println("connected -)");
-      Serial.println("");
-      // Создаем URI для запроса
-      String url = "/update?key=";
-      url += apikey;
-      url += "&field1=";
-      url += temp180;
-      url += "&field2=";
-      url += pressure;
-      url += "&field3=";
-      url += h;
-      url += "&field4=";
-      url += t;
-      url += "&field5=";
-      url += raw;
+	Serial.println("connected -)");
+	Serial.println("");
+	// Создаем URI для запроса
+	String url = "/update?key=";
+	url += apikey;
+	url += "&field1=";
+	url += temp180;
+	url += "&field2=";
+	url += pressure;
+	url += "&field3=";
+	url += h;
+	url += "&field4=";
+	url += t;
+	url += "&field5=";
+	url += raw;
 
-      Serial.print("Requesting URL: ");
-      Serial.print(host);
-      Serial.println(url);
+	Serial.print("Requesting URL: ");
+	Serial.print(host);
+	Serial.println(url);
 
-      // отправляем запрос на сервер
-      client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-                   "Host: " + host + "\r\n" +
-                   "Connection: close\r\n\r\n");
-      client.flush(); // ждем отправки всех данных
+	// отправляем запрос на сервер
+	client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+			   "Host: " + host + "\r\n" +
+			   "Connection: close\r\n\r\n");
+	client.flush(); // ждем отправки всех данных
 
-      /*String lines = "";
+	/*String lines = "";
 
-      // Read all the lines of the reply from server and print them to Serial
-      while (client.available()) {
-        String line = client.readStringUntil('\r');
-        lines += line + "<br>";
-        //char line = client.read();
-        Serial.print(line);
+	// Read all the lines of the reply from server and print them to Serial
+	while (client.available()) {
+	String line = client.readStringUntil('\r');
+	lines += line + "<br>";
+	//char line = client.read();
+	Serial.print(line);
       }
 
       Serial.println();
