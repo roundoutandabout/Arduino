@@ -153,10 +153,10 @@ void handle_root() {
 		thingspeak_send();
 
 		digitalWrite(led12, 0);
+		delay(200);
 	}
 	
 	//***************************
-	delay(200);
 	
 	if (nm_send) {
 		digitalWrite(led12, 1);
