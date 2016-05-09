@@ -29,6 +29,7 @@ int raw = 0; // Photoresistor
 
 float h; // Values for DHT11
 float t;
+float hi;
 
 float pressure; // values for BMP180
 float temp180;
@@ -99,12 +100,13 @@ void handle_root() {
   h = dht.readHumidity();
   // Read temperature as Celsius
   t = dht.readTemperature();
-  //float hi = dht.computeHeatIndex(t, h, false);
+  hi = dht.computeHeatIndex(t, h, false);
   //float ti = ((hi-32)/2)+(((hi-32)/2)/10);
 
-  if (isnan(t) || isnan(h)) {
+  if (isnan(t) || isnan(h) || isnan(hi)) {
     h = 0;
     t = 0;
+	hi = 0;
   }
 
   digitalWrite(led15, 0);
@@ -114,7 +116,7 @@ void handle_root() {
     String out = "";
 
     out += base;
-    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br> Давление(атм.): " + String(pressure) + " мм.рт.ст.<br><hr><b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Ощущаемая температура: "+"String(hi)"+" &deg;C.<br><hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr>";
+    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br> Давление(атм.): " + String(pressure) + " мм.рт.ст.<br><hr><b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Heat index: "+String(hi)+" &deg;C.<br><hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr>";
 
     if( ts_send ){
         out+="\
