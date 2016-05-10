@@ -1,13 +1,14 @@
 #ESP8266 Weather Station
-##Weather Station, that uses:
+Weather Station uses:
 <ul>
 	<li><b>ESP12</b> (I use ESP8266 WIFI Witty cloud Development Board with ESP-12F)</li>
 	<li><b>DHT11/22</b></li>
 	<li><b>BMP180</b></li>
-	<li><b>Analog Photoresistor (default in Witty cloud)</b></li>
+	<li><b>Analog Photoresistor</b> (default in Witty cloud)</li>
 	<li><b>LEDs for indicating</b> (default in Witty cloud)</li>
 </ul>
-###What's in:
+
+	What's in:
 	+	Sending to ThingSpeak & Narodmon
 	+	Simple web-interface on client side
 
