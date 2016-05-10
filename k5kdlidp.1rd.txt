@@ -1,0 +1,18 @@
+﻿Revert "Merge branch 'master' of https://github.com/roundoutandabout/Arduino"
+
+This reverts commit 95c8f6880f0de21d870f54527fdfd46d5da5263c, reversing
+changes made to 227bd73150f93b59430fdd1711637e7ea483a1e2.
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch master
+# Your branch is up-to-date with 'origin/master'.
+#
+# Changes to be committed:
+#	deleted:    ESPMeteoStation_dev/README
+#	deleted:    README.md
+#
+# Untracked files:
+#	README
+#
+
