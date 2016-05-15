@@ -13,6 +13,6 @@ What's in:
 	+	Sending to ThingSpeak & Narodmon
 	+	Simple web-interface on client side
 
-<p>Almost all code is taken from other projects so don't blame me if you see some familiar parts of code:)</p>
+<p>Almost all code is taken from other projects so don't blame me if you see some familiar parts:)</p>
 	
 <p>DS18B20 1-Wire temperature sensors and sending to FlyMon is coming soon.</p>
