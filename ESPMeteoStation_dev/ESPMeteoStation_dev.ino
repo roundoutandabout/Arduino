@@ -8,6 +8,10 @@
 #define DHTPIN 14
 #define DHTTYPE DHT11   // DHT 11/22
 
+#include <DallasTemperature.h>
+#include <OneWire.h>
+#define ONE_WIRE_BUS 12
+
 #include <Adafruit_BMP085.h>
 
 const char *ssid = "PC-Woody";
