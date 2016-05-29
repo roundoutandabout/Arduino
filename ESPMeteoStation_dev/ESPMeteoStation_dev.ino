@@ -8,11 +8,6 @@
 #define DHTPIN 14
 #define DHTTYPE DHT11   // DHT 11/22
 
-#include <DallasTemperature.h>
-#include <OneWire.h>
-#define ONE_WIRE_BUS 4
-#define TEMPERATURE_PRECISION 12 // точность бит. Если глючит или врет, уменьшить до 9
-
 #include <Adafruit_BMP085.h>
 
 const char *ssid = "PC-Woody";
@@ -20,7 +15,7 @@ const char *password = "DustMyBroom";
 
 const char* host = "api.thingspeak.com";
 const char* apikey = "YIR58CFT1SIPMUJ0"; // ключик от thingsspeak.com
-String Hostname;
+String Hostname = "ESP18FE34D85AC2";
 
 const int led15 = 15; //red
 const int led13 = 13; //blue
@@ -46,74 +41,6 @@ DHT dht(DHTPIN, DHTTYPE, 15);
 // Note that older versions of this library took an optional third parameter to
 // tweak the timings for faster processors.  This parameter is no longer needed
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
-
-
-// DS18B20 setting
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
-DeviceAddress tempDeviceAddress;
-int NumberOfDevices;
-
-void setup(void) {
-
-	Serial.begin(115200);
-	pinMode(led15, OUTPUT);
-	pinMode(led13, OUTPUT);
-	pinMode(led12, OUTPUT);
-	digitalWrite(led15, 0);
-	digitalWrite(led13, 0);
-	digitalWrite(led12, 0);
-
-	WiFi.begin ( ssid, password );
-	while (WiFi.status() != WL_CONNECTED) {
-	delay(500);
-	Serial.print(".");
-	}
-	
-	Hostname = "ESP" + WiFi.macAddress();
-	Hostname.replace(":","");
-
-	Serial.println("");
-	Serial.println("Client mode");// Говорим что мы в режиме клиент
-	Serial.print("Connected to ");
-	Serial.println(ssid);
-	Serial.print("IP address: ");
-	Serial.println(WiFi.localIP());
-
-	Serial.print("mac address: ");
-	Serial.println(Hostname);
-
-	if ( MDNS.begin ( "esp8266" ) ) {
-		Serial.println ( "MDNS responder started" );
-	}
-
-	server.on("/", handle_root);
-	server.on("/services", handle_services);
-	/*server.on("/inline", []() {
-	server.send(200, "text/plain", "this works as well");
-	});*/
-	server.begin();
-	Serial.println("HTTP server started");
-
-	Wire.pins(0, 2);// устанавливаем пины SDA,SCL для i2c
-
-	if (!bmp.begin()) {
-		Serial.println("Could not find a valid BMP085 sensor, check wiring!");
-	}
-
-	dht.begin();
-
-	sensors.begin(); //ds18b20
-	NumberOfDevices = sensors.getDeviceCount(); //поищем.
-	sensors.getAddress(tempDeviceAddress, 0);
-	
-	for (int i = 0; i < NumberOfDevices; i++) { 
-		if (sensors.getAddress(tempDeviceAddress, i))
-		sensors.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION); 
-	} //настроим.
-  
-
-}
 
 String base = "<!DOCTYPE html>\
         <head>\
@@ -156,7 +83,7 @@ void handle_root() {
 
     raw = analogRead( pinPhoto );
 
-	//***************************
+  //***************************
 
 
     float pressure = 0;
@@ -166,46 +93,31 @@ void handle_root() {
       pressure = (bmp.readPressure() / 133.3);
       temp180 = (bmp.readTemperature());
     }
-	//***************************
-	digitalWrite(led15, 1);
+  //***************************
+  digitalWrite(led15, 1);
 
+  
+  h = dht.readHumidity();
+  // Read temperature as Celsius
+  t = dht.readTemperature();
+  hi = dht.computeHeatIndex(t, h, false);
+  //float ti = ((hi-32)/2)+(((hi-32)/2)/10);
 
-	h = dht.readHumidity();
-	// Read temperature as Celsius
-	t = dht.readTemperature();
-	hi = dht.computeHeatIndex(t, h, false);
-	//float ti = ((hi-32)/2)+(((hi-32)/2)/10);
+  if (isnan(t) || isnan(h) || isnan(hi)) {
+    h = 0;
+    t = 0;
+	hi = 0;
+  }
 
-	if (isnan(t) || isnan(h) || isnan(hi)) {
-		h = 0;
-		t = 0;
-		hi = 0;
-	}
-
-	digitalWrite(led15, 0);
-	//***************************
-	digitalWrite(led13, 1);
+  digitalWrite(led15, 0);
+  //***************************
+  digitalWrite(led13, 1);
 
     String out = "";
 
     out += base;
-    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br> Давление(атм.): " + String(pressure) + " мм.рт.ст.<br><hr><b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Heat index: "+String(hi)+ " &deg;C.<br><hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr>";
-	
-	
-	/* float tempArray[NumberOfDevices]; //Temperatures for DS sensors
-	
-	if (NumberOfDevices) {
-		out += "<b>DS18B20</b><br>";
-		for (int i = 0; i < NumberOfDevices; i++)  { //перечисляем датчики и их показания
-			tempArray[i] = sensors.getTempCByIndex(i); //и температура
-			out +="Sensor " + String(i+1) + ": " + String(tempArray[i]) + " &deg;C.<br>";
-		}
-		out +="<hr>";
-	} */
-	sensors.requestTemperatures(); // Send the command to get temperatures
-	
-	out += "<b>DS18B20</b><br>NumberofDevices: " + String(NumberOfDevices) + "<br>Temperature: " + String(sensors.getTempCByIndex(0)) + "<hr>";
-	
+    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br> Давление(атм.): " + String(pressure) + " мм.рт.ст.<br><hr><b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Heat index: "+String(hi)+" &deg;C.<br><hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr>";
+
     if( ts_send ){
         out+="\
           <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span> - Sending enabled</span><hr>\
@@ -366,6 +278,54 @@ bool narodmon_send() {
     }
 	
     return true; //ушло
+}
+
+void setup(void) {
+
+  Serial.begin(115200);
+  pinMode(led15, OUTPUT);
+  pinMode(led13, OUTPUT);
+  pinMode(led12, OUTPUT);
+  digitalWrite(led15, 0);
+  digitalWrite(led13, 0);
+  digitalWrite(led12, 0);
+
+  WiFi.begin ( ssid, password );
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("Client mode");// Говорим что мы в режиме клиент
+  Serial.print("Connected to ");
+  Serial.println(ssid);
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  Serial.print("mac address: ");
+  Serial.println(WiFi.macAddress());
+
+  if ( MDNS.begin ( "esp8266" ) ) {
+    Serial.println ( "MDNS responder started" );
+  }
+
+  server.on("/", handle_root);
+  server.on("/services", handle_services);
+  /*server.on("/inline", []() {
+    server.send(200, "text/plain", "this works as well");
+  });*/
+  server.begin();
+  Serial.println("HTTP server started");
+
+  Wire.pins(0, 2);// устанавливаем пины SDA,SCL для i2c
+
+  if (!bmp.begin()) {
+    Serial.println("Could not find a valid BMP085 sensor, check wiring!");
+  }
+
+  dht.begin();
+
 }
 
 void loop ( void ) {
