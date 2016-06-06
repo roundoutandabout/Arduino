@@ -135,7 +135,7 @@ void handle_root() {
 	Heat index: "+String(hi)+ " &deg;C.<br>\
 	<hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr>";
 	
-	sensors.begin(); //ds18b20
+	//sensors.begin(); //ds18b20
 	NumberOfDevices = sensors.getDeviceCount(); //поищем.
 	
 	sensors.requestTemperatures(); // Send the command to get temperatures
@@ -145,7 +145,7 @@ void handle_root() {
 		out += "<b>DS18B20 (" + String(NumberOfDevices) + "):</b><br>";
 		
 		for (int i = 0; i < NumberOfDevices; i++)  { //перечисляем датчики и их показания
-			//tempArray[i] = sensors.getTempCByIndex(i); //и температура
+		
 			sensors.getAddress(tempDeviceAddress, i);
 			
 			out +="Sensor " + String(i+1) + ":<br>\
