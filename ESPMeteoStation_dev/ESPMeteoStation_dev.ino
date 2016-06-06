@@ -139,7 +139,6 @@ void handle_root() {
 	NumberOfDevices = sensors.getDeviceCount(); //поищем.
 	
 	sensors.requestTemperatures(); // Send the command to get temperatures
-	//float tempArray[NumberOfDevices]; //Temperatures for DS sensors
 	
 	if (NumberOfDevices) {
 		out += "<b>DS18B20 (" + String(NumberOfDevices) + "):</b><br>";
@@ -155,9 +154,6 @@ void handle_root() {
 		}
 		out +="<hr>";
 	}
-	
-	/* out += "<b>DS18B20</b><br>NumberofDevices: " + String(NumberOfDevices) + "<br>\
-	Temperature: " + String(sensors.getTempCByIndex(0)) + "<br>Address: " + String(returnAddress(tempDeviceAddress)) + "<hr>"; */
 	
     if( ts_send ){
         out+="\
