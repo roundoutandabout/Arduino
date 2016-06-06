@@ -28,7 +28,8 @@ const int led12 = 12; //green
 const int pinPhoto = A0;
 
 unsigned long previousMillis = 0;        // will store last temp was read
-const long interval = 2000;              // interval at which to read sensor
+const long interval = 2000;              // interval at which to read sensor (ms)
+const int sendInterval = 600; //10 min	// interval at wich to send data to the Internet (s)
 
 int raw = 0; // Photoresistor
 
