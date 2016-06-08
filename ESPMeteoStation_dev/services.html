@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=400px">
+    <title>Wi-Fi ESP8266 Метеостанция</title>
+    <style type="text/css">
+      body{
+        background-color: #7D8EE2;
+		color:#FFF;
+		font-size:18px;
+      }
+      a {
+        color:#73B9FF;
+      }
+      .blockk {
+        border:solid 1px #2d2d2d;
+        text-align:center;background:#0059B3;padding:10px 10px 10px 10px;
+        -moz-border-radius: 5px;-webkit-border-radius: 5px;border-radius: 5px;}
+      .blockk{
+        border:double 2px #000000;
+        -moz-border-radius: 5px;
+        -webkit-border-radius: 5px;
+        border-radius: 5px;
+      }
+	  form p {
+	  margin: 0;
+	  }
+    </style>
+    <style type="text/css" media="(min-width: 810px)">
+      .blockk {
+          width: 400px;
+        }
+    </style>
+      <meta http-equiv="REFRESH" content="60"></head>
+      <body>
+        <center>
+          <div class="blockk"><span style="font-size: 25px">Мини Метеостанция на ESP8266</span><br>
+            <hr><form action="" method="GET">
+              <div style="display: inline-block; text-align:left">
+                  <p>Thingspeak:</p>
+                  <p>Narodmon:</p>
+                  <p>Flymon:</p>
+				  <p>Arduino Cloud:</p><br>
+				  <label for="interval">Sending period (sec):
+              </div>
+              <div style="display: inline-block">
+						<input id="a1" type="radio" name="ts-send" value="1"><label for="a1">Yes</label>
+						<input id="a0" type="radio" name="ts-send" value="0"><label for="a0">No</label><br>
+						<input id="b1" type="radio" name="nm-send" value="1"><label for="b1">Yes</label>
+						<input id="b0" type="radio" name="nm-send" value="0"><label for="b0">No</label><br>
+						<input id="c1" type="radio" name="fm-send" value="1"><label for="c1">Yes</label>
+						<input id="c0" type="radio" name="fm-send" value="0"><label for="c0">No</label><br>
+						<input id="d1" type="radio" name="ac-send" value="0"><label for="d1">Yes</label>
+						<input id="d0" type="radio" name="ac-send" value="0"><label for="d0">No</label><br><br>
+						<input id="interval" name="send-period" style="width: 30px;"></input><br>
+              </div><br>
+                <input type="submit" id="" value="Apply"></input>
+            </form>
+            <hr></div>
+        </center>
+      </body>
+</html>

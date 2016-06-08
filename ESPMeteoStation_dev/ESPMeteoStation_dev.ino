@@ -27,9 +27,13 @@ const int led13 = 13; //blue
 const int led12 = 12; //green
 const int pinPhoto = A0;
 
+unsigned long currentMillis;
+
 unsigned long previousMillis = 0;        // will store last temp was read
 const long interval = 2000;              // interval at which to read sensor (ms)
-const int sendInterval = 600; //10 min	// interval at wich to send data to the Internet (s)
+
+unsigned long previousSendMillis = 0;
+const int sendInterval = 600; //10 min	// interval at wich to send data to the Internet (sec)
 
 int raw = 0; // Photoresistor
 
@@ -57,24 +61,39 @@ int NumberOfDevices;
 
 String base = "<!DOCTYPE html>\
         <head>\
-          <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\
-          <meta name=\"viewport\" content=\"width=400px\">\
-          <title>Wi-Fi ESP8266 Метеостанция</title>\
-          <style type=\"text/css\">body\{background-color: #7D8EE2;color:#FFF;}\
-            a \{color: white;}\
-            .blockk \{border:solid 1px #2d2d2d;\
-                      text-align:center;background:#0059B3;padding:10px 10px 10px 10px;\
-                      -moz-border-radius: 5px;-webkit-border-radius: 5px;border-radius: 5px;}"
-            ".blockk{border:double 2px #000000;-moz-border-radius: 5px;-webkit-border-radius: 5px;border-radius: 5px;}"
-            "</style><style type=\"text/css\" media=\'(min-width: 810px)\'>body\{font-size:18px;}.blockk \{width: 400px;}</style>"
-            "<style type=\"text/css\" media=\'(max-width: 800px) and (orientation:landscape)\'>body\{font-size:8px;}</style><meta http-equiv=\"REFRESH\" content=\"600\"></head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">ESP8266 Weather Station</span><br><hr>";
+			<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\
+			<meta name=\"viewport\" content=\"width=400px\">\
+			<title>Wi-Fi ESP8266 Метеостанция</title>\
+			<style type=\"text/css\">\
+				body \{background-color: #7D8EE2;color:#FFF;}\
+				a \{color: white;}\
+				.blockk \{\
+					border:double 3px #000000;\
+					text-align:center;\
+					background:#0059B3;\
+					padding: 10px 10px 10px 10px;\
+					-moz-border-radius: 5px;\
+					-webkit-border-radius: 5px;\
+					border-radius: 5px;}\
+				form p {margin: 0;}\
+			</style>\
+			<style type=\"text/css\" media=\'(min-width: 810px)\'>\
+				body\{font-size:18px;}\
+				.blockk \{width: 400px;}</style>\
+            <style type=\"text/css\" media=\'(max-width: 800px) and (orientation:landscape)\'>\
+				body\{font-size:8px;}\
+			</style>\
+			<meta http-equiv=\"REFRESH\" content=\"600\">\
+			</head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">ESP8266 Weather Station</span><br><hr>";
 
 bool ts_send  = false;
 bool nm_send  = false;
+bool ac_send  = false;
+
 
 void handle_root() {
 
-  unsigned long currentMillis = millis();
+  currentMillis = millis();
 
   if(currentMillis - previousMillis >= interval) {
     // save the last time you read the sensor
@@ -99,8 +118,8 @@ void handle_root() {
 	//***************************
 
 
-    float pressure = 0;
-    float temp180 = 0;
+	pressure = 0;
+	temp180 = 0;
 
     if (bmp.begin()) {
       pressure = (bmp.readPressure() / 133.3);
@@ -136,9 +155,8 @@ void handle_root() {
 	Heat index: "+String(hi)+ " &deg;C.<br>\
 	<hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr>";
 	
-	//sensors.begin(); //ds18b20
+	sensors.begin(); //ds18b20
 	NumberOfDevices = sensors.getDeviceCount(); //поищем.
-	
 	sensors.requestTemperatures(); // Send the command to get temperatures
 	
 	if (NumberOfDevices) {
@@ -187,25 +205,6 @@ void handle_root() {
 
     digitalWrite(led13, 0);
   //***************************
-	if (ts_send) {
-		digitalWrite(led12, 1);
-
-		thingspeak_send();
-
-		digitalWrite(led12, 0);
-		delay(200);
-	}
-	
-	//***************************
-	
-	if (nm_send) {
-		digitalWrite(led12, 1);
-
-		narodmon_send();
-
-		digitalWrite(led12, 0);
-	}
-	
   }
 }
 
@@ -233,17 +232,21 @@ void handle_services() {
   out += base;
   out +="<form action=\"/\" method=\"GET\">\
                 <div style=\"display: inline-block; text-align:left\">\
-                  <span>Thingspeak:</span><br>\
-                  <span>Narodmon:</span><br>\
-                  <span>Flymon:</span>\
+                  <p>Thingspeak:</p>\
+                  <p>Narodmon:</p>\
+                  <p>Flymon:</p>\
+				  <p>Arduino Cloud:</p>\
                 </div>\
                     <div style=\"display: inline-block\">\
-                    <input id=\"a1\" type=\"radio\" name=\"ts-send\" value=\"1\"><label for=\"a1\">Yes</label>\
-                    <input id=\"a0\" type=\"radio\" name=\"ts-send\" value=\"0\"><label for=\"a0\">No</label><br>\
-                    <input id=\"b1\" type=\"radio\" name=\"nm-send\" value=\"1\"><label for=\"b1\">Yes</label>\
-                    <input id=\"b0\" type=\"radio\" name=\"nm-send\" value=\"0\"><label for=\"b0\">No</label><br>\
-                    <input id=\"c1\" type=\"radio\" name=\"fm-send\" value=\"1\"><label for=\"c1\">Yes</label>\
-                    <input id=\"c0\" type=\"radio\" name=\"fm-send\" value=\"0\"><label for=\"c0\">No</label></div><br>\
+						<input id=\"a1\" type=\"radio\" name=\"ts-send\" value=\"1\"><label for=\"a1\">Yes</label>\
+						<input id=\"a0\" type=\"radio\" name=\"ts-send\" value=\"0\"><label for=\"a0\">No</label><br>\
+						<input id=\"b1\" type=\"radio\" name=\"nm-send\" value=\"1\"><label for=\"b1\">Yes</label>\
+						<input id=\"b0\" type=\"radio\" name=\"nm-send\" value=\"0\"><label for=\"b0\">No</label><br>\
+						<input id=\"c1\" type=\"radio\" name=\"fm-send\" value=\"1\"><label for=\"c1\">Yes</label>\
+						<input id=\"c0\" type=\"radio\" name=\"fm-send\" value=\"0\"><label for=\"c0\">No</label><br>\
+						<input id=\"d1\" type=\"radio\" name=\"ac-send\" value=\"0\"><label for=\"d1\">Yes</label>\
+						<input id=\"d0\" type=\"radio\" name=\"ac-send\" value=\"0\"><label for=\"d0\">No</label>\
+					</div><br>\
                   <input type=\"submit\" id=\"\" value=\"Apply\"></input>\
               </form>\
               <hr><a href=\"/\">Back</a><hr></div>\
@@ -293,20 +296,7 @@ bool thingspeak_send() {
 			   "Connection: close\r\n\r\n");
 	client.flush(); // ждем отправки всех данных
 
-	/*String lines = "";
-
-	// Read all the lines of the reply from server and print them to Serial
-	while (client.available()) {
-	String line = client.readStringUntil('\r');
-	lines += line + "<br>";
-	//char line = client.read();
-	Serial.print(line);
-      }
-
-      Serial.println();
-      Serial.println("closing connection");
-      Serial.println();*/
-	  return true;
+	return true;
 }
 
 bool narodmon_send() {
@@ -396,7 +386,24 @@ void setup(void) {
 }
 
 void loop ( void ) {
+	
+	server.handleClient();
+	
+	currentMillis = millis()/1000;
 
-  server.handleClient();
-
+	if(currentMillis - previousSendMillis >= sendInterval) {
+		digitalWrite(led12, 1);
+		previousSendMillis = currentMillis;
+		
+		if (nm_send) {
+			narodmon_send();
+			delay(200);
+		}
+		
+		if (ts_send) {
+			thingspeak_send();
+		}
+		
+		digitalWrite(led12, 0);
+	}
 }
