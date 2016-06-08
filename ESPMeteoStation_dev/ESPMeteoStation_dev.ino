@@ -15,6 +15,31 @@
 
 #include <Adafruit_BMP085.h>
 
+//****************
+
+extern "C" {
+	#include "user_interface.h"
+}
+
+os_timer_t myTimer;
+
+bool tickOccured;
+
+void timerCallback(void *pArg) {
+
+	tickOccured = true;
+
+}
+
+
+void user_init(int milliseconds) {
+		
+	os_timer_setfn(&myTimer, timerCallback, NULL);
+	os_timer_arm(&myTimer, milliseconds, true);
+}
+
+//****************
+
 const char *ssid = "PC-Woody";
 const char *password = "DustMyBroom";
 
@@ -32,8 +57,9 @@ unsigned long currentMillis;
 unsigned long previousMillis = 0;        // will store last temp was read
 const long interval = 2000;              // interval at which to read sensor (ms)
 
-unsigned long previousSendMillis = 0;
-const int sendInterval = 600; //10 min	// interval at wich to send data to the Internet (sec)
+
+int oldSendInterval = 1;
+int sendInterval = 1;					// interval at wich to send data to the Internet (sec)
 
 int raw = 0; // Photoresistor
 
@@ -112,6 +138,10 @@ void handle_root() {
 			if( strncmp(server.arg("nm-send").c_str(),"0",1) == 0 ) nm_send = false;
 		}
 	}
+	
+	if( server.hasArg("send-period") ){
+		sendInterval = server.arg("send-period").toInt();
+	}
 
     raw = analogRead( pinPhoto );
 
@@ -149,11 +179,10 @@ void handle_root() {
     String out = "";
 
     out += base;
-    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br>\
-	Давление(атм.): " + String(pressure) + " мм.рт.ст.<br><hr><b>DHT11:</b><br>\
-	Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>\
-	Heat index: "+String(hi)+ " &deg;C.<br>\
-	<hr><b>Фотодиод:</b><br>" + String(raw) + " /1024.<br><hr>";
+    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br>Давление(атм.): " + String(pressure) + " мм.рт.ст.<hr>\
+	<b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Heat index: "+String(hi)+ " &deg;C.<hr>\
+	<b>Фотодиод:</b><br>" + String(raw) + " /1024.<hr>\
+	<b>Send Interval</b><br>" + String(sendInterval) + " sec.<hr>";
 	
 	sensors.begin(); //ds18b20
 	NumberOfDevices = sensors.getDeviceCount(); //поищем.
@@ -235,7 +264,8 @@ void handle_services() {
                   <p>Thingspeak:</p>\
                   <p>Narodmon:</p>\
                   <p>Flymon:</p>\
-				  <p>Arduino Cloud:</p>\
+				  <p>Arduino Cloud:</p><br>\
+				  <label for=\"interval\">Sending period (sec):\
                 </div>\
                     <div style=\"display: inline-block\">\
 						<input id=\"a1\" type=\"radio\" name=\"ts-send\" value=\"1\"><label for=\"a1\">Yes</label>\
@@ -245,7 +275,8 @@ void handle_services() {
 						<input id=\"c1\" type=\"radio\" name=\"fm-send\" value=\"1\"><label for=\"c1\">Yes</label>\
 						<input id=\"c0\" type=\"radio\" name=\"fm-send\" value=\"0\"><label for=\"c0\">No</label><br>\
 						<input id=\"d1\" type=\"radio\" name=\"ac-send\" value=\"0\"><label for=\"d1\">Yes</label>\
-						<input id=\"d0\" type=\"radio\" name=\"ac-send\" value=\"0\"><label for=\"d0\">No</label>\
+						<input id=\"d0\" type=\"radio\" name=\"ac-send\" value=\"0\"><label for=\"d0\">No</label><br><br>\
+						<input id=\"interval\" name=\"send-period\" style=\"width: 30px;\"></input><br>\
 					</div><br>\
                   <input type=\"submit\" id=\"\" value=\"Apply\"></input>\
               </form>\
@@ -381,19 +412,24 @@ void setup(void) {
 		if (sensors.getAddress(tempDeviceAddress, i))
 		sensors.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION); 
 	} //настроим.
-  
-
+	
+	
+	tickOccured = false;
+	user_init(sendInterval*1000);
 }
 
 void loop ( void ) {
 	
 	server.handleClient();
 	
-	currentMillis = millis()/1000;
-
-	if(currentMillis - previousSendMillis >= sendInterval) {
+	if (oldSendInterval != sendInterval) {
+		os_timer_arm(&myTimer, sendInterval*1000, true);
+		oldSendInterval = sendInterval;
+	}
+	
+	if (tickOccured == true) {
+		
 		digitalWrite(led12, 1);
-		previousSendMillis = currentMillis;
 		
 		if (nm_send) {
 			narodmon_send();
@@ -404,6 +440,10 @@ void loop ( void ) {
 			thingspeak_send();
 		}
 		
+		tickOccured = false;
+		
 		digitalWrite(led12, 0);
 	}
+	
+	yield();  // or delay(0);
 }
