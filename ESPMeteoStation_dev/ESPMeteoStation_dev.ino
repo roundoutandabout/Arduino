@@ -15,28 +15,32 @@
 
 #include <Adafruit_BMP085.h>
 
+#include <BH1750.h>
+
+
 //****************
+	int oldSendInterval = 60;
+	int sendInterval = 60;
+	
+	extern "C" {
+		#include "user_interface.h"
+	}
+	
+	os_timer_t myTimer;
 
-extern "C" {
-	#include "user_interface.h"
-}
+	bool tickOccured;
 
-os_timer_t myTimer;
+	void timerCallback(void *pArg) {
 
-bool tickOccured;
+		tickOccured = true;
 
-void timerCallback(void *pArg) {
+	}
 
-	tickOccured = true;
-
-}
-
-
-void user_init(int milliseconds) {
-		
-	os_timer_setfn(&myTimer, timerCallback, NULL);
-	os_timer_arm(&myTimer, milliseconds, true);
-}
+	void user_init(int milliseconds) {
+			
+		os_timer_setfn(&myTimer, timerCallback, NULL);
+		os_timer_arm(&myTimer, milliseconds, true);
+	}
 
 //****************
 
@@ -58,9 +62,6 @@ unsigned long previousMillis = 0;        // will store last temp was read
 const long interval = 2000;              // interval at which to read sensor (ms)
 
 
-int oldSendInterval = 1;
-int sendInterval = 1;					// interval at wich to send data to the Internet (sec)
-
 int raw = 0; // Photoresistor
 
 float h; // Values for DHT11
@@ -79,11 +80,14 @@ DHT dht(DHTPIN, DHTTYPE, 15);
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
 
 
-// DS18B20 setting
+//setting DS18B20
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 DeviceAddress tempDeviceAddress;
 int NumberOfDevices;
+
+BH1750 lightMeter; // setting BH1750 (GY-302)
+uint16_t lux;
 
 String base = "<!DOCTYPE html>\
         <head>\
@@ -141,35 +145,15 @@ void handle_root() {
 	
 	if( server.hasArg("send-period") ){
 		sendInterval = server.arg("send-period").toInt();
+		if (sendInterval < 10) sendInterval = 10;
 	}
 
-    raw = analogRead( pinPhoto );
-
-	//***************************
-
-
-	pressure = 0;
-	temp180 = 0;
-
-    if (bmp.begin()) {
-      pressure = (bmp.readPressure() / 133.3);
-      temp180 = (bmp.readTemperature());
-    }
-	
+    
 	//***************************
 	digitalWrite(led15, 1);
 
-
-	h = dht.readHumidity();
-	// Read temperature as Celsius
-	t = dht.readTemperature();
-	hi = dht.computeHeatIndex(t, h, false);
-	//float ti = ((hi-32)/2)+(((hi-32)/2)/10);
-
-	if (isnan(t) || isnan(h) || isnan(hi)) {
-		h = 0;
-		t = 0;
-		hi = 0;
+	if (!nm_send && !ts_send) {
+		read_data();
 	}
 
 	digitalWrite(led15, 0);
@@ -182,7 +166,8 @@ void handle_root() {
     out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br>Давление(атм.): " + String(pressure) + " мм.рт.ст.<hr>\
 	<b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Heat index: "+String(hi)+ " &deg;C.<hr>\
 	<b>Фотодиод:</b><br>" + String(raw) + " /1024.<hr>\
-	<b>Send Interval</b><br>" + String(sendInterval) + " sec.<hr>";
+	<b>Люксметр:</b><br>" + String(lux) + " lux.<hr>\
+	<b>Send Interval:</b><br>" + String(sendInterval) + " sec.<hr>";
 	
 	sensors.begin(); //ds18b20
 	NumberOfDevices = sensors.getDeviceCount(); //поищем.
@@ -315,7 +300,7 @@ bool thingspeak_send() {
 	url += "&field4=";
 	url += t;
 	url += "&field5=";
-	url += raw;
+	url += lux;
 
 	Serial.print("Requesting URL: ");
 	Serial.print(host);
@@ -339,7 +324,7 @@ bool narodmon_send() {
 	buf += "#P1#" + String(pressure) + "\r\n";
 	buf += "#T2#" + String(t) + "\r\n";
 	buf += "#H1#" + String(h) + "\r\n";
-	buf += "#L1#" + String(raw) + "\r\n";
+	buf += "#L1#" + String(lux) + "\r\n";
 	buf += "##\r\n";
 	
 	if (!client.connect("narodmon.ru", 8283)) { // попытка подключения
@@ -354,6 +339,34 @@ bool narodmon_send() {
     }
 	
     return true; //ушло
+}
+
+void read_data(void) { // Reads data from ADC, bmp180, dht11/22, bht1750
+	raw = analogRead( pinPhoto );
+	
+	pressure = 0;
+	temp180 = 0;
+
+    if (bmp.begin()) {
+      pressure = (bmp.readPressure() / 133.3);
+      temp180 = (bmp.readTemperature());
+    }
+	
+	//***************************
+
+	h = dht.readHumidity();
+	// Read temperature as Celsius
+	t = dht.readTemperature();
+	hi = dht.computeHeatIndex(t, h, false);
+	//float ti = ((hi-32)/2)+(((hi-32)/2)/10);
+
+	if (isnan(t) || isnan(h) || isnan(hi)) {
+		h = 0;
+		t = 0;
+		hi = 0;
+	}
+	
+	lux = lightMeter.readLightLevel();
 }
 
 void setup(void) {
@@ -413,6 +426,7 @@ void setup(void) {
 		sensors.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION); 
 	} //настроим.
 	
+	lightMeter.begin();
 	
 	tickOccured = false;
 	user_init(sendInterval*1000);
@@ -428,6 +442,12 @@ void loop ( void ) {
 	}
 	
 	if (tickOccured == true) {
+		
+		digitalWrite(led15, 1);
+		
+			read_data();
+			
+		digitalWrite(led15, 0);
 		
 		digitalWrite(led12, 1);
 		
