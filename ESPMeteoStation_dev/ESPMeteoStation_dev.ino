@@ -83,7 +83,7 @@ String base = "<!DOCTYPE html>\
             <style type=\"text/css\" media=\'(max-width: 800px) and (orientation:landscape)\'>\
 				body\{font-size:8px;}\
 			</style>\
-			<meta http-equiv=\"REFRESH\" content=\"600\">\
+			<meta http-equiv=\"REFRESH\" content=\"300\">\
 			</head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">ESP8266 Weather Station</span><br><hr>";
 
 bool ts_send  = false;
