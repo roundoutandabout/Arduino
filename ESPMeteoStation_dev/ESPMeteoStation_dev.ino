@@ -118,8 +118,8 @@ void handle_root() {
 	//***************************
 
 
-    float pressure = 0;
-    float temp180 = 0;
+	pressure = 0;
+	temp180 = 0;
 
     if (bmp.begin()) {
       pressure = (bmp.readPressure() / 133.3);
