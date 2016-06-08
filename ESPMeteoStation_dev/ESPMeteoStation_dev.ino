@@ -15,6 +15,31 @@
 
 #include <Adafruit_BMP085.h>
 
+//****************
+
+extern "C" {
+	#include "user_interface.h"
+}
+
+os_timer_t myTimer;
+
+bool tickOccured;
+
+void timerCallback(void *pArg) {
+
+	tickOccured = true;
+
+}
+
+
+void user_init(int milliseconds) {
+		
+	os_timer_setfn(&myTimer, timerCallback, NULL);
+	os_timer_arm(&myTimer, milliseconds, true);
+}
+
+//****************
+
 const char *ssid = "PC-Woody";
 const char *password = "DustMyBroom";
 
