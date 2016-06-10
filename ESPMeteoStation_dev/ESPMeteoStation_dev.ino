@@ -435,7 +435,9 @@ void setup(void) {
 	}
 
 	dht.begin();
-
+	
+	//*********************
+	
 	sensors.begin(); //ds18b20
 	NumberOfDevices = sensors.getDeviceCount(); //поищем.
 	
@@ -444,8 +446,10 @@ void setup(void) {
 		sensors.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION); 
 	} //настроим.
 	
+	//*********************
+	
 	lightMeter.begin();
-	lightMeter.configure(BH1750_CONTINUOUS_HIGH_RES_MODE_2);
+	lightMeter.configure(BH1750_CONTINUOUS_LOW_RES_MODE);
 	
 		/*Wire.beginTransmission(BH1750_I2CADDR);
 		Wire.write(BH1750_DOUBLE_MT_HB);
