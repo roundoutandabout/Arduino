@@ -15,6 +15,7 @@
 
 #include <Adafruit_BMP085.h>
 
+<<<<<<< HEAD
 const char *ssid = "PC-Woody";
 const char *password = "DustMyBroom";
 
@@ -38,11 +39,21 @@ bool ac_send  = false;
 	}
 
 	os_timer_t myTimer;
+=======
+//****************
 
-	bool tickOccured;
+extern "C" {
+	#include "user_interface.h"
+}
 
-	void timerCallback(void *pArg) {
+os_timer_t myTimer;
+>>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
 
+bool tickOccured;
+
+void timerCallback(void *pArg) {
+
+<<<<<<< HEAD
 		tickOccured = true;
 		
 		digitalWrite(led12, 1);
@@ -57,15 +68,26 @@ bool ac_send  = false;
 			}
 			
 		digitalWrite(led12, 0);
+=======
+	tickOccured = true;
+>>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
 
-	}
+}
 
 
+<<<<<<< HEAD
 	void user_init(int milliseconds) {
 			
 		os_timer_setfn(&myTimer, timerCallback, NULL);
 		os_timer_arm(&myTimer, milliseconds, true);
 	}
+=======
+void user_init(int milliseconds) {
+		
+	os_timer_setfn(&myTimer, timerCallback, NULL);
+	os_timer_arm(&myTimer, milliseconds, true);
+}
+>>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
 
 //****************
 
@@ -442,6 +464,20 @@ void loop ( void ) {
 	
 	if (tickOccured == true) {
 		
+<<<<<<< HEAD
+=======
+		digitalWrite(led12, 1);
+		
+		if (nm_send) {
+			narodmon_send();
+			delay(200);
+		}
+		
+		if (ts_send) {
+			thingspeak_send();
+		}
+		
+>>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
 		tickOccured = false;
 		
 	}
