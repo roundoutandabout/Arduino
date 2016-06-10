@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
->>>>>>> parent of 1b0370c... Revert "WTF???"
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
@@ -20,7 +15,6 @@
 
 #include <Adafruit_BMP085.h>
 
-<<<<<<< HEAD
 const char *ssid = "PC-Woody";
 const char *password = "DustMyBroom";
 
@@ -74,44 +68,6 @@ bool ac_send  = false;
 	}
 
 //****************
-=======
-//****************
-
-extern "C" {
-	#include "user_interface.h"
-}
-
-os_timer_t myTimer;
-
-bool tickOccured;
-
-void timerCallback(void *pArg) {
-
-	tickOccured = true;
-
-}
-
-
-void user_init(int milliseconds) {
-		
-	os_timer_setfn(&myTimer, timerCallback, NULL);
-	os_timer_arm(&myTimer, milliseconds, true);
-}
-
-//****************
-
-const char *ssid = "PC-Woody";
-const char *password = "DustMyBroom";
-
-const char* host = "api.thingspeak.com";
-const char* apikey = "YIR58CFT1SIPMUJ0"; // ключик от thingsspeak.com
-String Hostname;
-
-const int led15 = 15; //red
-const int led13 = 13; //blue
-const int led12 = 12; //green
-const int pinPhoto = A0;
->>>>>>> parent of 1b0370c... Revert "WTF???"
 
 unsigned long currentMillis;
 
@@ -171,15 +127,7 @@ String base = "<!DOCTYPE html>\
 				body\{font-size:8px;}\
 			</style>\
 			<meta http-equiv=\"REFRESH\" content=\"300\">\
-<<<<<<< HEAD
 	</head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">ESP8266 Weather Station</span><br><hr>";
-=======
-			</head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">ESP8266 Weather Station</span><br><hr>";
-
-bool ts_send  = false;
-bool nm_send  = false;
-bool ac_send  = false;
->>>>>>> parent of 1b0370c... Revert "WTF???"
 
 
 void handle_root() {
@@ -494,30 +442,9 @@ void loop ( void ) {
 	
 	if (tickOccured == true) {
 		
-<<<<<<< HEAD
 		tickOccured = false;
 		
-=======
-		digitalWrite(led12, 1);
-		
-		if (nm_send) {
-			narodmon_send();
-			delay(200);
-		}
-		
-		if (ts_send) {
-			thingspeak_send();
-		}
-		
-		tickOccured = false;
-		
-		digitalWrite(led12, 0);
->>>>>>> parent of 1b0370c... Revert "WTF???"
 	}
 	
 	yield();  // or delay(0);
 }
-<<<<<<< HEAD
-=======
->>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
->>>>>>> parent of 1b0370c... Revert "WTF???"
