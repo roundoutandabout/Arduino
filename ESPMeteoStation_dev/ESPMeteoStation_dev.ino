@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
@@ -28,6 +26,10 @@ const int led15 = 15; //red
 const int led13 = 13; //blue
 const int led12 = 12; //green
 const int pinPhoto = A0;
+
+bool ts_send  = false;
+bool nm_send  = false;
+bool ac_send  = false;
 
 //****************
 
@@ -125,11 +127,7 @@ String base = "<!DOCTYPE html>\
 				body\{font-size:8px;}\
 			</style>\
 			<meta http-equiv=\"REFRESH\" content=\"300\">\
-			</head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">ESP8266 Weather Station</span><br><hr>";
-
-bool ts_send  = false;
-bool nm_send  = false;
-bool ac_send  = false;
+	</head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">ESP8266 Weather Station</span><br><hr>";
 
 
 void handle_root() {
@@ -450,4 +448,3 @@ void loop ( void ) {
 	
 	yield();  // or delay(0);
 }
->>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
