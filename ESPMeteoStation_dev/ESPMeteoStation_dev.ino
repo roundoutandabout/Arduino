@@ -108,7 +108,8 @@ DeviceAddress tempDeviceAddress;
 int NumberOfDevices;
 
 BH1750 lightMeter; // setting BH1750 (GY-302)
-uint16_t lux;
+
+int lux;
 
 String base = "<!DOCTYPE html>\
         <head>\
@@ -444,10 +445,18 @@ void setup(void) {
 		sensors.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION); 
 	} //настроим.
 	
-	lightMeter.begin(BH1750_CONTINUOUS_HIGH_RES_MODE_2);
+	lightMeter.begin();
+	lightMeter.configure(BH1750_CONTINUOUS_HIGH_RES_MODE_2);
+	
+		/*Wire.beginTransmission(BH1750_I2CADDR);
+		Wire.write(BH1750_DOUBLE_MT);
+		Wire.endTransmission(); // Changing target sensor sensitivity to 2 times*/
 	
 	tickOccured = false;
 	user_init(sendInterval*1000);
+	
+	Serial.println(int(BH1750_DOUBLE_MT));
+	
 }
 
 void loop ( void ) {

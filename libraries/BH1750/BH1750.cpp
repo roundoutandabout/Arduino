@@ -72,7 +72,7 @@ uint16_t BH1750::readLightLevel(void) {
 #endif
 
   level = level/1.2; // convert to lux
-
+  
 #if BH1750_DEBUG == 1
   Serial.print("Light level: ");
   Serial.println(level);
