@@ -57,7 +57,11 @@ Written by Christopher Laws, March, 2013.
 // Device is automatically set to Power Down after measurement.
 #define BH1750_ONE_TIME_LOW_RES_MODE  0x23
 
-#define BH1750_DOUBLE_MT  0x8A
+// Double measurement time high bit
+#define BH1750_DOUBLE_MT_HB  0x44
+
+// Double measurement time low bit
+#define BH1750_DOUBLE_MT_LB  0x6A
 
 class BH1750 {
  public:

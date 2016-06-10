@@ -92,6 +92,8 @@ float hi;
 float pressure; // values for BMP180
 float temp180;
 
+float lux;
+
 ESP8266WebServer server ( 80 );
 
 Adafruit_BMP085 bmp;
@@ -100,16 +102,13 @@ DHT dht(DHTPIN, DHTTYPE, 15);
 // tweak the timings for faster processors.  This parameter is no longer needed
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
 
+BH1750 lightMeter; // setting BH1750 (GY-302)
 
 //setting DS18B20
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 DeviceAddress tempDeviceAddress;
 int NumberOfDevices;
-
-BH1750 lightMeter; // setting BH1750 (GY-302)
-
-int lux;
 
 String base = "<!DOCTYPE html>\
         <head>\
@@ -385,7 +384,7 @@ void read_data(void) { // Reads data from ADC, bmp180, dht11/22, bht1750
 		hi = 0;
 	}
 	
-	lux = lightMeter.readLightLevel();
+	lux = lightMeter.readLightLevel()/1.2;
 }
 
 void setup(void) {
@@ -449,13 +448,15 @@ void setup(void) {
 	lightMeter.configure(BH1750_CONTINUOUS_HIGH_RES_MODE_2);
 	
 		/*Wire.beginTransmission(BH1750_I2CADDR);
-		Wire.write(BH1750_DOUBLE_MT);
+		Wire.write(BH1750_DOUBLE_MT_HB);
+		Wire.endTransmission(); // Changing target sensor sensitivity to 2 times*/
+		
+		/*Wire.beginTransmission(BH1750_I2CADDR);
+		Wire.write(BH1750_DOUBLE_MT_LB);
 		Wire.endTransmission(); // Changing target sensor sensitivity to 2 times*/
 	
 	tickOccured = false;
 	user_init(sendInterval*1000);
-	
-	Serial.println(int(BH1750_DOUBLE_MT));
 	
 }
 
