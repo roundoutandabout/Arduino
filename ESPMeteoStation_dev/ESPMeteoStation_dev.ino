@@ -16,6 +16,7 @@
 #include <Adafruit_BMP085.h>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const char *ssid = "PC-Woody";
 const char *password = "DustMyBroom";
 
@@ -71,10 +72,26 @@ void timerCallback(void *pArg) {
 =======
 	tickOccured = true;
 >>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
+=======
+//****************
+
+extern "C" {
+	#include "user_interface.h"
+}
+
+os_timer_t myTimer;
+
+bool tickOccured;
+
+void timerCallback(void *pArg) {
+
+	tickOccured = true;
+>>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
 
 }
 
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 	void user_init(int milliseconds) {
 			
@@ -82,11 +99,16 @@ void timerCallback(void *pArg) {
 		os_timer_arm(&myTimer, milliseconds, true);
 	}
 =======
+=======
+>>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
 void user_init(int milliseconds) {
 		
 	os_timer_setfn(&myTimer, timerCallback, NULL);
 	os_timer_arm(&myTimer, milliseconds, true);
 }
+<<<<<<< HEAD
+>>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
+=======
 >>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
 
 //****************
@@ -465,7 +487,10 @@ void loop ( void ) {
 	if (tickOccured == true) {
 		
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> parent of 63dbd14... Added BH1750 + Some improvements
 		digitalWrite(led12, 1);
 		
 		if (nm_send) {
