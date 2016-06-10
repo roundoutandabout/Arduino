@@ -17,31 +17,6 @@
 
 #include <Adafruit_BMP085.h>
 
-//****************
-
-extern "C" {
-	#include "user_interface.h"
-}
-
-os_timer_t myTimer;
-
-bool tickOccured;
-
-void timerCallback(void *pArg) {
-
-	tickOccured = true;
-
-}
-
-
-void user_init(int milliseconds) {
-		
-	os_timer_setfn(&myTimer, timerCallback, NULL);
-	os_timer_arm(&myTimer, milliseconds, true);
-}
-
-//****************
-
 const char *ssid = "PC-Woody";
 const char *password = "DustMyBroom";
 
@@ -53,6 +28,44 @@ const int led15 = 15; //red
 const int led13 = 13; //blue
 const int led12 = 12; //green
 const int pinPhoto = A0;
+
+//****************
+
+	extern "C" {
+		#include "user_interface.h"
+	}
+
+	os_timer_t myTimer;
+
+	bool tickOccured;
+
+	void timerCallback(void *pArg) {
+
+		tickOccured = true;
+		
+		digitalWrite(led12, 1);
+			
+			if (nm_send) {
+				narodmon_send();
+				delay(200);
+			}
+			
+			if (ts_send) {
+				thingspeak_send();
+			}
+			
+		digitalWrite(led12, 0);
+
+	}
+
+
+	void user_init(int milliseconds) {
+			
+		os_timer_setfn(&myTimer, timerCallback, NULL);
+		os_timer_arm(&myTimer, milliseconds, true);
+	}
+
+//****************
 
 unsigned long currentMillis;
 
@@ -431,20 +444,8 @@ void loop ( void ) {
 	
 	if (tickOccured == true) {
 		
-		digitalWrite(led12, 1);
-		
-		if (nm_send) {
-			narodmon_send();
-			delay(200);
-		}
-		
-		if (ts_send) {
-			thingspeak_send();
-		}
-		
 		tickOccured = false;
 		
-		digitalWrite(led12, 0);
 	}
 	
 	yield();  // or delay(0);
