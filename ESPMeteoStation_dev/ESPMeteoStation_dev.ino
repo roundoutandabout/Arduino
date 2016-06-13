@@ -4,6 +4,8 @@
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
 
+#include <Ticker.h>
+
 #include <DHT.h>
 #define DHTPIN 14
 #define DHTTYPE DHT11   // DHT 11/22
@@ -34,39 +36,39 @@ bool nm_send  = false;
 bool ac_send  = false;
 
 //****************
-	int oldSendInterval = 60;
-	int sendInterval = 60;
+int oldSendInterval = 60;
+int sendInterval = 60;
 	
-	extern "C" {
-		#include "user_interface.h"
-	}
-	
-	os_timer_t myTimer;
+Ticker ts_sender;
+Ticker nm_sender;
 
-	bool tickOccured;
+bool tickOccured;
 
 	void timerCallback(void *pArg) {
 		
-		digitalWrite(led15, 1);
+		if (nm_send || ts_send) {
 		
-			read_data();
+			digitalWrite(led15, 1);
 			
-		digitalWrite(led15, 0);
-		
-		digitalWrite(led12, 1);
-		
-			if (nm_send) {
-				narodmon_send();
-				delay(200);
-			}
+				read_data();
+				
+			digitalWrite(led15, 0);
 			
-			if (ts_send) {
-				thingspeak_send();
-			}
+			digitalWrite(led12, 1);*/
 			
-		digitalWrite(led12, 0);
-
-		tickOccured = true;
+				if (nm_send) {
+					narodmon_send();
+					delay(200);
+				}
+				
+				if (ts_send) {
+					thingspeak_send();
+				}
+				
+			digitalWrite(led12, 0);
+			
+			tickOccured = true;
+		}
 	}
 
 	void user_init(int milliseconds) {
@@ -161,8 +163,9 @@ void handle_root() {
 		}
 	}
 	
-	if( server.hasArg("send-period") ){
+	if( server.hasArg("send-period") ) {
 		sendInterval = server.arg("send-period").toInt();
+		if (sendInterval == 0) sendInterval = oldSendInterval;
 		if (sendInterval < 10) sendInterval = 10;
 	}
 
@@ -181,11 +184,10 @@ void handle_root() {
     String out = "";
 
     out += base;
-    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br>Давление(атм.): " + String(pressure) + " мм.рт.ст.<hr>\
+    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br>Давление (атм.): " + String(pressure) + " мм.рт.ст.<hr>\
 	<b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Heat index: "+String(hi)+ " &deg;C.<hr>\
 	<b>Фотодиод:</b><br>" + String(raw) + " /1024.<hr>\
-	<b>Люксметр:</b><br>" + String(lux) + " lux.<hr>\
-	<b>Send Interval:</b><br>" + String(sendInterval) + " sec.<hr>";
+	<b>Люксметр:</b><br>" + String(lux) + " lux.<hr>";
 	
 	sensors.begin(); //ds18b20
 	NumberOfDevices = sensors.getDeviceCount(); //поищем.
@@ -228,11 +230,13 @@ void handle_root() {
         ";
     }
 
-    out+="\
-      <hr><a href=\"/services\">Отправка на сервисы</a><br><hr></div></center></body></html>\
+    out+="<hr>\
+		<b>Send Interval:</b><br>" + String(sendInterval) + " sec.<hr>\
+		<a href=\"/services\">Отправка на сервисы</a><br><hr></div></center></body></html>\
     ";
 
     //Веб сервер
+	
     server.send(200, "text/html", out);
 
     digitalWrite(led13, 0);
@@ -266,8 +270,7 @@ void handle_services() {
                 <div style=\"display: inline-block; text-align:left\">\
                   <p>Thingspeak:</p>\
                   <p>Narodmon:</p>\
-                  <p>Flymon:</p>\
-				  <p>Arduino Cloud:</p><br>\
+				  <p>IOT-Playground:</p><br>\
 				  <label for=\"interval\">Sending period (sec):\
                 </div>\
                     <div style=\"display: inline-block\">\
@@ -275,10 +278,8 @@ void handle_services() {
 						<input id=\"a0\" type=\"radio\" name=\"ts-send\" value=\"0\"><label for=\"a0\">No</label><br>\
 						<input id=\"b1\" type=\"radio\" name=\"nm-send\" value=\"1\"><label for=\"b1\">Yes</label>\
 						<input id=\"b0\" type=\"radio\" name=\"nm-send\" value=\"0\"><label for=\"b0\">No</label><br>\
-						<input id=\"c1\" type=\"radio\" name=\"fm-send\" value=\"1\"><label for=\"c1\">Yes</label>\
-						<input id=\"c0\" type=\"radio\" name=\"fm-send\" value=\"0\"><label for=\"c0\">No</label><br>\
-						<input id=\"d1\" type=\"radio\" name=\"ac-send\" value=\"0\"><label for=\"d1\">Yes</label>\
-						<input id=\"d0\" type=\"radio\" name=\"ac-send\" value=\"0\"><label for=\"d0\">No</label><br><br>\
+						<input id=\"c1\" type=\"radio\" name=\"iot-send\" value=\"1\"><label for=\"c1\">Yes</label>\
+						<input id=\"d0\" type=\"radio\" name=\"iot-send\" value=\"0\"><label for=\"d0\">No</label><br><br>\
 						<input id=\"interval\" name=\"send-period\" style=\"width: 30px;\"></input><br>\
 					</div><br>\
                   <input type=\"submit\" id=\"\" value=\"Apply\"></input>\
@@ -301,6 +302,9 @@ bool thingspeak_send() {
 	const int httpPort = 80;
 	if (!client.connect(host, httpPort)) {
 		Serial.println("connection failed");
+		Serial.println();
+		Serial.println();
+		Serial.println();
 		return false;
 	}
 
@@ -320,20 +324,32 @@ bool thingspeak_send() {
 	url += "&field5=";
 	url += lux;
 
+	
 	Serial.print("Requesting URL: ");
 	Serial.print(host);
 	Serial.println(url);
 
+	
 	// отправляем запрос на сервер
 	client.print(String("GET ") + url + " HTTP/1.1\r\n" +
 			   "Host: " + host + "\r\n" +
 			   "Connection: close\r\n\r\n");
 	client.flush(); // ждем отправки всех данных
+	
+	
+	// Read all the lines of the reply from server and print them to Serial
+	while(client.available()){
+		String line = client.readStringUntil('\r');
+		//char line = client.read();
+		Serial.print(line);
+	}
 
+	
 	return true;
 }
 
 bool narodmon_send() {
+	Serial.print("connecting to narodmon");
 	
 	WiFiClient client;
 	String buf;
