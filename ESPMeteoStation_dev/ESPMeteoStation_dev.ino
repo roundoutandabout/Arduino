@@ -26,9 +26,9 @@ const char* host = "api.thingspeak.com";
 const char* apikey = "YIR58CFT1SIPMUJ0"; // ключик от thingsspeak.com
 String Hostname;
 
-const int led15 = 15; //red
-const int led13 = 13; //blue
-const int led12 = 12; //green
+const int led15 = 15; //red read data
+const int led13 = 13; //blue load pages
+const int led12 = 12; //green send to cloud
 const int pinPhoto = A0;
 
 bool ts_send  = false;
@@ -39,12 +39,14 @@ bool ac_send  = false;
 int oldSendInterval = 60;
 int sendInterval = 60;
 	
-Ticker ts_sender;
-Ticker nm_sender;
+Ticker sender;
 
 bool tickOccured;
 
-	void timerCallback(void *pArg) {
+void timerCallback() {
+	tickOccured = true;	
+}
+/*	void timerCallback(void *pArg) {
 		
 		if (nm_send || ts_send) {
 		
@@ -54,11 +56,10 @@ bool tickOccured;
 				
 			digitalWrite(led15, 0);
 			
-			digitalWrite(led12, 1);*/
+			digitalWrite(led12, 1);
 			
 				if (nm_send) {
 					narodmon_send();
-					delay(200);
 				}
 				
 				if (ts_send) {
@@ -75,7 +76,7 @@ bool tickOccured;
 			
 		os_timer_setfn(&myTimer, timerCallback, NULL);
 		os_timer_arm(&myTimer, milliseconds, true);
-	}
+	}*/
 
 //****************
 
@@ -116,7 +117,7 @@ String base = "<!DOCTYPE html>\
         <head>\
 			<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\
 			<meta name=\"viewport\" content=\"width=400px\">\
-			<title>Wi-Fi ESP8266 Метеостанция</title>\
+			<title>Wi-Fi ESP8266</title>\
 			<style type=\"text/css\">\
 				body \{background-color: #7D8EE2;color:#FFF;}\
 				a \{color: white;}\
@@ -129,6 +130,9 @@ String base = "<!DOCTYPE html>\
 					-webkit-border-radius: 5px;\
 					border-radius: 5px;}\
 				form p {margin: 0;}\
+				.caption {\
+					font-size: 25px;\
+					text-decoration: none;}\
 			</style>\
 			<style type=\"text/css\" media=\'(min-width: 810px)\'>\
 				body\{font-size:18px;}\
@@ -137,49 +141,62 @@ String base = "<!DOCTYPE html>\
 				body\{font-size:8px;}\
 			</style>\
 			<meta http-equiv=\"REFRESH\" content=\"300\">\
-		</head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">ESP8266 Weather Station</span><br><hr>";
+		</head><body><center><div class=\"blockk\"><a href=\"/\" class=\"caption\">ESP8266 Weather Station</a><br><hr>";
 
 
 
 void handle_root() {
-
-  currentMillis = millis();
-
-  if(currentMillis - previousMillis >= interval) {
-    // save the last time you read the sensor
-    previousMillis = currentMillis;
-
-	if( server.hasArg("ts-send") ){
-		if( strncmp(server.arg("ts-send").c_str(),"1",1) == 0 ) ts_send = true;
-		else {
-			if( strncmp(server.arg("ts-send").c_str(),"0",1) == 0 ) ts_send = false;
-		}
-	}
 	
-	if( server.hasArg("nm-send") ){
-		if( strncmp(server.arg("nm-send").c_str(),"1",1) == 0 ) nm_send = true;
-		else {
-			if( strncmp(server.arg("nm-send").c_str(),"0",1) == 0 ) nm_send = false;
-		}
-	}
+	
+	currentMillis = millis();
+
+	if(currentMillis - previousMillis >= interval) {
+		
+		digitalWrite(led13, 1);
+	// save the last time you read the sensor
+	previousMillis = currentMillis;
 	
 	if( server.hasArg("send-period") ) {
 		sendInterval = server.arg("send-period").toInt();
 		if (sendInterval == 0) sendInterval = oldSendInterval;
 		if (sendInterval < 10) sendInterval = 10;
+		sender.attach(sendInterval, timerCallback);
+		oldSendInterval = sendInterval;
 	}
+	
 
+	if( server.hasArg("ts-send") ){
+		if( strncmp(server.arg("ts-send").c_str(),"1",1) == 0 ) {
+			ts_send = true;
+			sender.attach(sendInterval, timerCallback); // enable timer
+		}
+		else {
+			if( strncmp(server.arg("ts-send").c_str(),"0",1) == 0 ) {
+				ts_send = false;
+			}
+		}
+	}
+	
+	if( server.hasArg("nm-send") ){
+		if( strncmp(server.arg("nm-send").c_str(),"1",1) == 0 ) {
+			nm_send = true;
+			sender.attach(sendInterval, timerCallback);
+		}
+		else {
+			if( strncmp(server.arg("nm-send").c_str(),"0",1) == 0 ) {
+				nm_send = false;
+			}
+		}
+	}
     
 	//***************************
-	digitalWrite(led15, 1);
 
 	if (!nm_send && !ts_send) {
 		read_data();
+		sender.detach();
 	}
 
-	digitalWrite(led15, 0);
 	//***************************
-	digitalWrite(led13, 1);
 
     String out = "";
 
@@ -262,18 +279,20 @@ String returnAddress(DeviceAddress deviceAddress) {
 }
 
 void handle_services() {
+	
+	digitalWrite(led13, 1);
 
-  String out = "";
+	String out = "";
 
-  out += base;
-  out +="<form action=\"/\" method=\"GET\">\
-                <div style=\"display: inline-block; text-align:left\">\
-                  <p>Thingspeak:</p>\
-                  <p>Narodmon:</p>\
+	out += base;
+	out +="<form action=\"/\" method=\"GET\">\
+				<div style=\"display: inline-block; text-align:left\">\
+				  <p>Thingspeak:</p>\
+				  <p>Narodmon:</p>\
 				  <p>IOT-Playground:</p><br>\
 				  <label for=\"interval\">Sending period (sec):\
-                </div>\
-                    <div style=\"display: inline-block\">\
+				</div>\
+					<div style=\"display: inline-block\">\
 						<input id=\"a1\" type=\"radio\" name=\"ts-send\" value=\"1\"><label for=\"a1\">Yes</label>\
 						<input id=\"a0\" type=\"radio\" name=\"ts-send\" value=\"0\"><label for=\"a0\">No</label><br>\
 						<input id=\"b1\" type=\"radio\" name=\"nm-send\" value=\"1\"><label for=\"b1\">Yes</label>\
@@ -282,18 +301,24 @@ void handle_services() {
 						<input id=\"d0\" type=\"radio\" name=\"iot-send\" value=\"0\"><label for=\"d0\">No</label><br><br>\
 						<input id=\"interval\" name=\"send-period\" style=\"width: 30px;\"></input><br>\
 					</div><br>\
-                  <input type=\"submit\" id=\"\" value=\"Apply\"></input>\
-              </form>\
-              <hr><a href=\"/\">Back</a><hr></div>\
-          </center>\
-        </body>\
-  </html>\
-  ";
+				  <input type=\"submit\" id=\"\" value=\"Apply\"></input>\
+			  </form>\
+			  <hr><a href=\"/\">Back</a><hr></div>\
+		  </center>\
+		</body>\
+	</html>\
+	";
 
-  server.send(200, "text/html", out);
+	server.send(200, "text/html", out);
+	
+	digitalWrite(led13, 0);
 }
 
-bool thingspeak_send() {
+void thingspeak_send() {
+	digitalWrite(led12, 1);
+	
+	delay(1000);
+	
 	Serial.print("connecting to ");
 	Serial.println(host);
 
@@ -305,7 +330,7 @@ bool thingspeak_send() {
 		Serial.println();
 		Serial.println();
 		Serial.println();
-		return false;
+		return;
 	}
 
 	Serial.println("connected -)");
@@ -344,12 +369,16 @@ bool thingspeak_send() {
 		Serial.print(line);
 	}
 
-	
-	return true;
+	digitalWrite(led12, 0);
+	return;
 }
 
-bool narodmon_send() {
-	Serial.print("connecting to narodmon");
+void narodmon_send() {
+	digitalWrite(led12, 1);
+	
+	delay(1000);
+	
+	Serial.println("connecting to narodmon");
 	
 	WiFiClient client;
 	String buf;
@@ -363,7 +392,7 @@ bool narodmon_send() {
 	
 	if (!client.connect("narodmon.ru", 8283)) { // попытка подключения
       Serial.println("connection failed");
-      return false; // не удалось;
+      return; // не удалось;
     } else
     {
       client.print(buf); // и отправляем данные
@@ -372,10 +401,13 @@ bool narodmon_send() {
         Serial.print(line);      }
     }
 	
-    return true; //ушло
+	digitalWrite(led12, 0);
+    return; //ушло
 }
 
 void read_data(void) { // Reads data from ADC, bmp180, dht11/22, bht1750
+	digitalWrite(led15, 1);
+
 	raw = analogRead( pinPhoto );
 	
 	pressure = 0;
@@ -401,6 +433,7 @@ void read_data(void) { // Reads data from ADC, bmp180, dht11/22, bht1750
 	}
 	
 	lux = lightMeter.readLightLevel()/1.2;
+	digitalWrite(led15, 0);
 }
 
 void setup(void) {
@@ -475,8 +508,8 @@ void setup(void) {
 		Wire.write(BH1750_DOUBLE_MT_LB);
 		Wire.endTransmission(); // Changing target sensor sensitivity to 2 times*/
 	
-	tickOccured = false;
-	user_init(sendInterval*1000);
+	/* tickOccured = false;
+	user_init(sendInterval*1000); */
 	
 }
 
@@ -484,16 +517,19 @@ void loop ( void ) {
 	
 	server.handleClient();
 	
-	if (oldSendInterval != sendInterval) {
-		os_timer_arm(&myTimer, sendInterval*1000, true);
-		oldSendInterval = sendInterval;
-	}
-	
 	if (tickOccured == true) {
 		
-		tickOccured = false;
+		read_data();
 		
+		if (nm_send) {
+			narodmon_send();
+		}
+		
+		if (ts_send) {
+			thingspeak_send();
+		}
+		
+		tickOccured = false;
 	}
 	
-	yield();  // or delay(0);
 }
