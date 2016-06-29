@@ -4,6 +4,8 @@
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
 
+#include <Ticker.h>
+
 #include <DHT.h>
 #define DHTPIN 14
 #define DHTTYPE DHT11   // DHT 11/22
@@ -15,30 +17,7 @@
 
 #include <Adafruit_BMP085.h>
 
-//****************
-
-extern "C" {
-	#include "user_interface.h"
-}
-
-os_timer_t myTimer;
-
-bool tickOccured;
-
-void timerCallback(void *pArg) {
-
-	tickOccured = true;
-
-}
-
-
-void user_init(int milliseconds) {
-		
-	os_timer_setfn(&myTimer, timerCallback, NULL);
-	os_timer_arm(&myTimer, milliseconds, true);
-}
-
-//****************
+#include <BH1750.h>
 
 const char *ssid = "PC-Woody";
 const char *password = "DustMyBroom";
@@ -47,19 +26,65 @@ const char* host = "api.thingspeak.com";
 const char* apikey = "YIR58CFT1SIPMUJ0"; // ключик от thingsspeak.com
 String Hostname;
 
-const int led15 = 15; //red
-const int led13 = 13; //blue
-const int led12 = 12; //green
+const int led15 = 15; //red read data
+const int led13 = 13; //blue load pages
+const int led12 = 12; //green send to cloud
 const int pinPhoto = A0;
+
+bool ts_send  = false;
+bool nm_send  = false;
+bool ac_send  = false;
+
+//****************
+int oldSendInterval = 60;
+int sendInterval = 60;
+	
+Ticker sender;
+
+bool tickOccured;
+
+void timerCallback() {
+	tickOccured = true;	
+}
+/*	void timerCallback(void *pArg) {
+		
+		if (nm_send || ts_send) {
+		
+			digitalWrite(led15, 1);
+			
+				read_data();
+				
+			digitalWrite(led15, 0);
+			
+			digitalWrite(led12, 1);
+			
+				if (nm_send) {
+					narodmon_send();
+				}
+				
+				if (ts_send) {
+					thingspeak_send();
+				}
+				
+			digitalWrite(led12, 0);
+			
+			tickOccured = true;
+		}
+	}
+
+	void user_init(int milliseconds) {
+			
+		os_timer_setfn(&myTimer, timerCallback, NULL);
+		os_timer_arm(&myTimer, milliseconds, true);
+	}*/
+
+//****************
 
 unsigned long currentMillis;
 
 unsigned long previousMillis = 0;        // will store last temp was read
 const long interval = 2000;              // interval at which to read sensor (ms)
 
-
-int oldSendInterval = 1;
-int sendInterval = 1;					// interval at wich to send data to the Internet (sec)
 
 int raw = 0; // Photoresistor
 
@@ -70,6 +95,8 @@ float hi;
 float pressure; // values for BMP180
 float temp180;
 
+float lux;
+
 ESP8266WebServer server ( 80 );
 
 Adafruit_BMP085 bmp;
@@ -78,8 +105,9 @@ DHT dht(DHTPIN, DHTTYPE, 15);
 // tweak the timings for faster processors.  This parameter is no longer needed
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
 
+BH1750 lightMeter; // setting BH1750 (GY-302)
 
-// DS18B20 setting
+//setting DS18B20
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 DeviceAddress tempDeviceAddress;
@@ -89,7 +117,7 @@ String base = "<!DOCTYPE html>\
         <head>\
 			<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\
 			<meta name=\"viewport\" content=\"width=400px\">\
-			<title>Wi-Fi ESP8266 Метеостанция</title>\
+			<title>Wi-Fi ESP8266</title>\
 			<style type=\"text/css\">\
 				body \{background-color: #7D8EE2;color:#FFF;}\
 				a \{color: white;}\
@@ -102,6 +130,9 @@ String base = "<!DOCTYPE html>\
 					-webkit-border-radius: 5px;\
 					border-radius: 5px;}\
 				form p {margin: 0;}\
+				.caption {\
+					font-size: 25px;\
+					text-decoration: none;}\
 			</style>\
 			<style type=\"text/css\" media=\'(min-width: 810px)\'>\
 				body\{font-size:18px;}\
@@ -110,79 +141,70 @@ String base = "<!DOCTYPE html>\
 				body\{font-size:8px;}\
 			</style>\
 			<meta http-equiv=\"REFRESH\" content=\"300\">\
-			</head><body><center><div class=\"blockk\"><span style=\"font-size: 25px\">ESP8266 Weather Station</span><br><hr>";
+		</head><body><center><div class=\"blockk\"><a href=\"/\" class=\"caption\">ESP8266 Weather Station</a><br><hr>";
 
-bool ts_send  = false;
-bool nm_send  = false;
-bool ac_send  = false;
 
 
 void handle_root() {
+	
+	
+	currentMillis = millis();
 
-  currentMillis = millis();
-
-  if(currentMillis - previousMillis >= interval) {
-    // save the last time you read the sensor
-    previousMillis = currentMillis;
+	if(currentMillis - previousMillis >= interval) {
+		
+		digitalWrite(led13, 1);
+	// save the last time you read the sensor
+	previousMillis = currentMillis;
+	
+	if( server.hasArg("send-period") ) {
+		sendInterval = server.arg("send-period").toInt();
+		if (sendInterval == 0) sendInterval = oldSendInterval;
+		if (sendInterval < 10) sendInterval = 10;
+		sender.attach(sendInterval, timerCallback);
+		oldSendInterval = sendInterval;
+	}
+	
 
 	if( server.hasArg("ts-send") ){
-		if( strncmp(server.arg("ts-send").c_str(),"1",1) == 0 ) ts_send = true;
+		if( strncmp(server.arg("ts-send").c_str(),"1",1) == 0 ) {
+			ts_send = true;
+			sender.attach(sendInterval, timerCallback); // enable timer
+		}
 		else {
-			if( strncmp(server.arg("ts-send").c_str(),"0",1) == 0 ) ts_send = false;
+			if( strncmp(server.arg("ts-send").c_str(),"0",1) == 0 ) {
+				ts_send = false;
+			}
 		}
 	}
 	
 	if( server.hasArg("nm-send") ){
-		if( strncmp(server.arg("nm-send").c_str(),"1",1) == 0 ) nm_send = true;
+		if( strncmp(server.arg("nm-send").c_str(),"1",1) == 0 ) {
+			nm_send = true;
+			sender.attach(sendInterval, timerCallback);
+		}
 		else {
-			if( strncmp(server.arg("nm-send").c_str(),"0",1) == 0 ) nm_send = false;
+			if( strncmp(server.arg("nm-send").c_str(),"0",1) == 0 ) {
+				nm_send = false;
+			}
 		}
 	}
-	
-	if( server.hasArg("send-period") ){
-		sendInterval = server.arg("send-period").toInt();
+    
+	//***************************
+
+	if (!nm_send && !ts_send) {
+		read_data();
+		sender.detach();
 	}
 
-    raw = analogRead( pinPhoto );
-
 	//***************************
-
-
-	pressure = 0;
-	temp180 = 0;
-
-    if (bmp.begin()) {
-      pressure = (bmp.readPressure() / 133.3);
-      temp180 = (bmp.readTemperature());
-    }
-	
-	//***************************
-	digitalWrite(led15, 1);
-
-
-	h = dht.readHumidity();
-	// Read temperature as Celsius
-	t = dht.readTemperature();
-	hi = dht.computeHeatIndex(t, h, false);
-	//float ti = ((hi-32)/2)+(((hi-32)/2)/10);
-
-	if (isnan(t) || isnan(h) || isnan(hi)) {
-		h = 0;
-		t = 0;
-		hi = 0;
-	}
-
-	digitalWrite(led15, 0);
-	//***************************
-	digitalWrite(led13, 1);
 
     String out = "";
 
     out += base;
-    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br>Давление(атм.): " + String(pressure) + " мм.рт.ст.<hr>\
+    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br>Давление (атм.): " + String(pressure) + " мбар/мм.рт.ст.<hr>\
 	<b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Heat index: "+String(hi)+ " &deg;C.<hr>\
 	<b>Фотодиод:</b><br>" + String(raw) + " /1024.<hr>\
-	<b>Send Interval</b><br>" + String(sendInterval) + " sec.<hr>";
+	<b>Люксметр:</b><br>" + String(lux) + " lux.<hr>";
 	
 	sensors.begin(); //ds18b20
 	NumberOfDevices = sensors.getDeviceCount(); //поищем.
@@ -225,11 +247,13 @@ void handle_root() {
         ";
     }
 
-    out+="\
-      <hr><a href=\"/services\">Отправка на сервисы</a><br><hr></div></center></body></html>\
+    out+="<hr>\
+		<b>Send Interval:</b><br>" + String(sendInterval) + " sec.<hr>\
+		<a href=\"/services\">Отправка на сервисы</a><br><hr></div></center></body></html>\
     ";
 
     //Веб сервер
+	
     server.send(200, "text/html", out);
 
     digitalWrite(led13, 0);
@@ -255,50 +279,56 @@ String returnAddress(DeviceAddress deviceAddress) {
 }
 
 void handle_services() {
+	
+	digitalWrite(led13, 1);
 
-  String out = "";
+	String out = "";
 
-  out += base;
-  out +="<form action=\"/\" method=\"GET\">\
-                <div style=\"display: inline-block; text-align:left\">\
-                  <p>Thingspeak:</p>\
-                  <p>Narodmon:</p>\
-                  <p>Flymon:</p>\
-				  <p>Arduino Cloud:</p><br>\
+	out += base;
+	out +="<form action=\"/\" method=\"GET\">\
+				<div style=\"display: inline-block; text-align:left\">\
+				  <p>Thingspeak:</p>\
+				  <p>Narodmon:</p>\
+				  <p>IOT-Playground:</p><br>\
 				  <label for=\"interval\">Sending period (sec):\
-                </div>\
-                    <div style=\"display: inline-block\">\
+				</div>\
+					<div style=\"display: inline-block\">\
 						<input id=\"a1\" type=\"radio\" name=\"ts-send\" value=\"1\"><label for=\"a1\">Yes</label>\
 						<input id=\"a0\" type=\"radio\" name=\"ts-send\" value=\"0\"><label for=\"a0\">No</label><br>\
 						<input id=\"b1\" type=\"radio\" name=\"nm-send\" value=\"1\"><label for=\"b1\">Yes</label>\
 						<input id=\"b0\" type=\"radio\" name=\"nm-send\" value=\"0\"><label for=\"b0\">No</label><br>\
-						<input id=\"c1\" type=\"radio\" name=\"fm-send\" value=\"1\"><label for=\"c1\">Yes</label>\
-						<input id=\"c0\" type=\"radio\" name=\"fm-send\" value=\"0\"><label for=\"c0\">No</label><br>\
-						<input id=\"d1\" type=\"radio\" name=\"ac-send\" value=\"0\"><label for=\"d1\">Yes</label>\
-						<input id=\"d0\" type=\"radio\" name=\"ac-send\" value=\"0\"><label for=\"d0\">No</label><br><br>\
+						<input id=\"c1\" type=\"radio\" name=\"iot-send\" value=\"1\"><label for=\"c1\">Yes</label>\
+						<input id=\"d0\" type=\"radio\" name=\"iot-send\" value=\"0\"><label for=\"d0\">No</label><br><br>\
 						<input id=\"interval\" name=\"send-period\" style=\"width: 30px;\"></input><br>\
 					</div><br>\
-                  <input type=\"submit\" id=\"\" value=\"Apply\"></input>\
-              </form>\
-              <hr><a href=\"/\">Back</a><hr></div>\
-          </center>\
-        </body>\
-  </html>\
-  ";
+				  <input type=\"submit\" id=\"\" value=\"Apply\"></input>\
+			  </form>\
+			  <hr><a href=\"/\">Back</a><hr></div>\
+		  </center>\
+		</body>\
+	</html>\
+	";
 
-  server.send(200, "text/html", out);
+	server.send(200, "text/html", out);
+	
+	digitalWrite(led13, 0);
 }
 
-bool thingspeak_send() {
-	Serial.print("connecting to ");
-	Serial.println(host);
+void thingspeak_send() {
+	digitalWrite(led12, 1);
+	
+	//delay(1000);
+	
+	//Serial.print("connecting to ");
+	//Serial.println(host);
 
 	// Use WiFiClient class to create TCP connections
 	WiFiClient client;
 	const int httpPort = 80;
 	if (!client.connect(host, httpPort)) {
 		Serial.println("connection failed");
-		return false;
+		digitalWrite(led12, 0);
+		return;
 	}
 
 	Serial.println("connected -)");
@@ -315,22 +345,38 @@ bool thingspeak_send() {
 	url += "&field4=";
 	url += t;
 	url += "&field5=";
-	url += raw;
+	url += lux;
 
+	
 	Serial.print("Requesting URL: ");
 	Serial.print(host);
 	Serial.println(url);
 
+	
 	// отправляем запрос на сервер
 	client.print(String("GET ") + url + " HTTP/1.1\r\n" +
 			   "Host: " + host + "\r\n" +
 			   "Connection: close\r\n\r\n");
 	client.flush(); // ждем отправки всех данных
+	
+	
+	// Read all the lines of the reply from server and print them to Serial
+	while(client.available()){
+		String line = client.readStringUntil('\r');
+		//char line = client.read();
+		Serial.print(line);
+	}
 
-	return true;
+	digitalWrite(led12, 0);
+	return;
 }
 
-bool narodmon_send() {
+void narodmon_send() {
+	digitalWrite(led12, 1);
+	
+	//delay(1000);
+	
+	Serial.println("connecting to narodmon");
 	
 	WiFiClient client;
 	String buf;
@@ -339,12 +385,13 @@ bool narodmon_send() {
 	buf += "#P1#" + String(pressure) + "\r\n";
 	buf += "#T2#" + String(t) + "\r\n";
 	buf += "#H1#" + String(h) + "\r\n";
-	buf += "#L1#" + String(raw) + "\r\n";
+	buf += "#L1#" + String(lux) + "\r\n";
 	buf += "##\r\n";
 	
 	if (!client.connect("narodmon.ru", 8283)) { // попытка подключения
       Serial.println("connection failed");
-      return false; // не удалось;
+	  digitalWrite(led12, 0);
+      return; // не удалось;
     } else
     {
       client.print(buf); // и отправляем данные
@@ -353,7 +400,39 @@ bool narodmon_send() {
         Serial.print(line);      }
     }
 	
-    return true; //ушло
+	digitalWrite(led12, 0);
+    return; //ушло
+}
+
+void read_data(void) { // Reads data from ADC, bmp180, dht11/22, bht1750
+	digitalWrite(led15, 1);
+
+	raw = analogRead( pinPhoto );
+	
+	pressure = 0;
+	temp180 = 0;
+
+    if (bmp.begin()) {
+		temp180 = bmp.readTemperature();
+		pressure = (bmp.readPressure() / 100);
+    }
+	
+	//***************************
+
+	h = dht.readHumidity();
+	// Read temperature as Celsius
+	t = dht.readTemperature();
+	hi = dht.computeHeatIndex(t, h, false);
+	//float ti = ((hi-32)/2)+(((hi-32)/2)/10);
+
+	if (isnan(t) || isnan(h) || isnan(hi)) {
+		h = 0;
+		t = 0;
+		hi = 0;
+	}
+	
+	lux = lightMeter.readLightLevel()/1.2;
+	digitalWrite(led15, 0);
 }
 
 void setup(void) {
@@ -404,7 +483,9 @@ void setup(void) {
 	}
 
 	dht.begin();
-
+	
+	//*********************
+	
 	sensors.begin(); //ds18b20
 	NumberOfDevices = sensors.getDeviceCount(); //поищем.
 	
@@ -413,27 +494,34 @@ void setup(void) {
 		sensors.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION); 
 	} //настроим.
 	
+	//*********************
 	
-	tickOccured = false;
-	user_init(sendInterval*1000);
+	lightMeter.begin();
+	lightMeter.configure(BH1750_CONTINUOUS_LOW_RES_MODE);
+	
+		/*Wire.beginTransmission(BH1750_I2CADDR);
+		Wire.write(BH1750_DOUBLE_MT_HB);
+		Wire.endTransmission(); // Changing target sensor sensitivity to 2 times*/
+		
+		/*Wire.beginTransmission(BH1750_I2CADDR);
+		Wire.write(BH1750_DOUBLE_MT_LB);
+		Wire.endTransmission(); // Changing target sensor sensitivity to 2 times*/
+	
+	/* tickOccured = false;
+	user_init(sendInterval*1000); */
+	
 }
 
 void loop ( void ) {
 	
 	server.handleClient();
 	
-	if (oldSendInterval != sendInterval) {
-		os_timer_arm(&myTimer, sendInterval*1000, true);
-		oldSendInterval = sendInterval;
-	}
-	
 	if (tickOccured == true) {
 		
-		digitalWrite(led12, 1);
+		read_data();
 		
 		if (nm_send) {
 			narodmon_send();
-			delay(200);
 		}
 		
 		if (ts_send) {
@@ -441,9 +529,6 @@ void loop ( void ) {
 		}
 		
 		tickOccured = false;
-		
-		digitalWrite(led12, 0);
 	}
 	
-	yield();  // or delay(0);
 }
