@@ -201,7 +201,7 @@ void handle_root() {
     String out = "";
 
     out += base;
-    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br>Давление (атм.): " + String(pressure) + " мм.рт.ст.<hr>\
+    out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br>Давление (атм.): " + String(pressure) + " мбар/мм.рт.ст.<hr>\
 	<b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Heat index: "+String(hi)+ " &deg;C.<hr>\
 	<b>Фотодиод:</b><br>" + String(raw) + " /1024.<hr>\
 	<b>Люксметр:</b><br>" + String(lux) + " lux.<hr>";
@@ -317,19 +317,17 @@ void handle_services() {
 void thingspeak_send() {
 	digitalWrite(led12, 1);
 	
-	delay(1000);
+	//delay(1000);
 	
-	Serial.print("connecting to ");
-	Serial.println(host);
+	//Serial.print("connecting to ");
+	//Serial.println(host);
 
 	// Use WiFiClient class to create TCP connections
 	WiFiClient client;
 	const int httpPort = 80;
 	if (!client.connect(host, httpPort)) {
 		Serial.println("connection failed");
-		Serial.println();
-		Serial.println();
-		Serial.println();
+		digitalWrite(led12, 0);
 		return;
 	}
 
@@ -376,7 +374,7 @@ void thingspeak_send() {
 void narodmon_send() {
 	digitalWrite(led12, 1);
 	
-	delay(1000);
+	//delay(1000);
 	
 	Serial.println("connecting to narodmon");
 	
@@ -392,6 +390,7 @@ void narodmon_send() {
 	
 	if (!client.connect("narodmon.ru", 8283)) { // попытка подключения
       Serial.println("connection failed");
+	  digitalWrite(led12, 0);
       return; // не удалось;
     } else
     {
@@ -414,8 +413,8 @@ void read_data(void) { // Reads data from ADC, bmp180, dht11/22, bht1750
 	temp180 = 0;
 
     if (bmp.begin()) {
-      pressure = (bmp.readPressure() / 133.3);
-      temp180 = (bmp.readTemperature());
+		temp180 = bmp.readTemperature();
+		pressure = (bmp.readPressure() / 100);
     }
 	
 	//***************************
