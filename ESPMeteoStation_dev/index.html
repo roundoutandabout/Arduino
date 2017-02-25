@@ -6,7 +6,10 @@
 <meta name="viewport" content="width=400px">
 <title>Wi-Fi ESP8266 Метеостанция</title>
 	<style type="text/css">
-		body {background-color: #7D8EE2;color:#FFF;}
+		body {background-color: #7D8EE2; color:#FFF;}
+		.title {font-size: 25px; display: block; }
+		.title a {text-decoration: underline;}
+		.title a:hover {opacity: 0.4; text-decoration: none;}
 		a {color: white;}
 		.blockk {
 		border:double 3px #000000;					
@@ -29,16 +32,17 @@
 <body>
 	<center>
 		<div class="blockk">
-			<span style="font-size: 25px">ESP8266 Weather Station</span><br><hr>
+			<span class="title"><a href="/">ESP8266 Weather Station</a></span><hr>
 			<b>BMP180:</b><br>Температура: 0.00 °C.<br>	Давление(атм.): 0.00 мм.рт.ст.<br><hr>
 			<b>DHT11:</b><br>	Температура: 0.00 °C.<br>Влажность (отн.): 0.00 %.<br>	Heat index: 0.00 °C.<br><hr>
 			<b>Фотодиод:</b><br>24 /1024.<br><hr>
-			<b>Send Interval</b><br>20<hr>
+			<b>Люксметр:</b><br>2317 lux.<br><hr>
 			<a href="https://thingspeak.com/channels/110382" target="_blank"><b>Thingspeak.com</b></a>
-				<span> - Sending disabled</span><hr>
+				<span style=" color: lightgreen">&#10004;</span><hr>
 			<a href="http://narodmon.ru/" target="_blank"><b>Narodmon.com</b></a>
-				<span> - Sending disabled</span>
-			<hr><a href="http://192.168.101.11/services">Отправка на сервисы</a><br><hr>
+				<span style=" color: tomato"> &#10006;</span><hr>
+			<b>Send Interval</b><br>20 sec.<hr>
+			<a href="services.html">Отправка на сервисы</a><br><hr>
 		</div>
 	</center>    
 </body>

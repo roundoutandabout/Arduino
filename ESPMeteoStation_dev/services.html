@@ -34,7 +34,7 @@
       <meta http-equiv="REFRESH" content="60"></head>
       <body>
         <center>
-			<div class="blockk"><span style="font-size: 25px">Мини Метеостанция на ESP8266</span><br>
+			<div class="blockk"><span style="font-size: 25px">ESP8266 Weather Station</span><br>
 				<hr><form action="" method="GET">
 				  <div style="display: inline-block; text-align:left">
 					  <p>Thingspeak:</p>
@@ -48,15 +48,15 @@
 							<input id="a0" type="radio" name="ts-send" value="0"><label for="a0">No</label><br>
 							<input id="b1" type="radio" name="nm-send" value="1"><label for="b1">Yes</label>
 							<input id="b0" type="radio" name="nm-send" value="0"><label for="b0">No</label><br>
-							<input id="c1" type="radio" name="fm-send" value="1"><label for="c1">Yes</label>
-							<input id="c0" type="radio" name="fm-send" value="0"><label for="c0">No</label><br>
+							<input id="c1" type="radio" checked name="fm-send" value="1"><label for="c1">Yes</label>
+							<input id="c0" type="radio" checked name="fm-send" value="0"><label for="c0">No</label><br>
 							<input id="d1" type="radio" name="ac-send" value="0"><label for="d1">Yes</label>
 							<input id="d0" type="radio" name="ac-send" value="0"><label for="d0">No</label><br><br>
-							<input id="interval" name="send-period" style="width: 30px;"></input><br>
+							<input id="interval" name="send-period" style="width: 30px;" value="10"></input><br>
 				  </div><br>
 					<input type="submit" id="" value="Apply"></input>
 				</form>
-				<hr><a href="/">Back</a><hr>
+				<hr><a href="index.html">Back</a><hr>
 			</div>
         </center>
       </body>

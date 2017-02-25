@@ -19,8 +19,8 @@
 
 #include <BH1750.h>
 
-const char *ssid = "PC-Woody";
-const char *password = "DustMyBroom";
+const char *ssid = "In_God_we_trust";
+const char *password = "937999201";
 
 const char* host = "api.thingspeak.com";
 const char* apikey = "YIR58CFT1SIPMUJ0"; // ключик от thingsspeak.com
@@ -132,16 +132,17 @@ String base = "<!DOCTYPE html>\
 				form p {margin: 0;}\
 				.caption {\
 					font-size: 25px;\
-					text-decoration: none;}\
+					text-decoration: underline;}\
+				.caption:hover {\
+					text-decoration: none;\
+					opacity: 0.4;}\
 			</style>\
 			<style type=\"text/css\" media=\'(min-width: 810px)\'>\
 				body\{font-size:18px;}\
 				.blockk \{width: 400px;}</style>\
             <style type=\"text/css\" media=\'(max-width: 800px) and (orientation:landscape)\'>\
 				body\{font-size:8px;}\
-			</style>\
-			<meta http-equiv=\"REFRESH\" content=\"300\">\
-		</head><body><center><div class=\"blockk\"><a href=\"/\" class=\"caption\">ESP8266 Weather Station</a><br><hr>";
+			</style>";
 
 
 
@@ -201,6 +202,10 @@ void handle_root() {
     String out = "";
 
     out += base;
+	
+	out +="<meta http-equiv=\"REFRESH\" content=\"" + String(sendInterval) + "\">\
+		</head><body><center><div class=\"blockk\"><a href=\"/\" class=\"caption\">ESP8266 Weather Station</a><br><hr>"; // Добавление обновления страницы в соответствии с интервалом отправки данных
+	
     out +="<b>BMP180:</b><br>Температура: " + String(temp180) + " &deg;C.<br>Давление (атм.): " + String(pressure) + " мбар/мм.рт.ст.<hr>\
 	<b>DHT11:</b><br>Температура: " + String(t) + " &deg;C.<br>Влажность (отн.): "+String(h)+" %.<br>Heat index: "+String(hi)+ " &deg;C.<hr>\
 	<b>Фотодиод:</b><br>" + String(raw) + " /1024.<hr>\
@@ -227,23 +232,23 @@ void handle_root() {
 	
     if( ts_send ){
         out+="\
-          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span> - Sending enabled</span><hr>\
+          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span style=\" color: lightgreen\"> &#10004;</span><hr>\
         ";
     }
     else {
         out+="\
-          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span> - Sending disabled</span><hr>\
+          <a href=\"https://thingspeak.com/channels/110382\" target=\"_blank\"><b>Thingspeak.com</b></a><span style=\" color: tomato\"> &#10006;</span><hr>\
         ";
     }
 	
 	if( nm_send ){
         out+="\
-          <a href=\"http://narodmon.ru/\" target=\"_blank\"><b>Narodmon.com</b></a><span> - Sending enabled</span>\
+          <a href=\"http://narodmon.ru/\" target=\"_blank\"><b>Narodmon.com</b></a><span style=\" color: lightgreen\"> &#10004;</span>\
         ";
     }
     else {
         out+="\
-          <a href=\"http://narodmon.ru/\" target=\"_blank\"><b>Narodmon.com</b></a><span> - Sending disabled</span>\
+          <a href=\"http://narodmon.ru/\" target=\"_blank\"><b>Narodmon.com</b></a><span style=\" color: tomato\"> &#10006;</span>\
         ";
     }
 
@@ -285,6 +290,10 @@ void handle_services() {
 	String out = "";
 
 	out += base;
+	
+	out +="<meta http-equiv=\"REFRESH\" content=\"" + String(sendInterval) + "\">\
+		</head><body><center><div class=\"blockk\"><a href=\"/\" class=\"caption\">ESP8266 Weather Station</a><br><hr>"; // Добавление обновления страницы в соответствии с интервалом отправки данных
+		
 	out +="<form action=\"/\" method=\"GET\">\
 				<div style=\"display: inline-block; text-align:left\">\
 				  <p>Thingspeak:</p>\
@@ -293,13 +302,13 @@ void handle_services() {
 				  <label for=\"interval\">Sending period (sec):\
 				</div>\
 					<div style=\"display: inline-block\">\
-						<input id=\"a1\" type=\"radio\" name=\"ts-send\" value=\"1\"><label for=\"a1\">Yes</label>\
-						<input id=\"a0\" type=\"radio\" name=\"ts-send\" value=\"0\"><label for=\"a0\">No</label><br>\
-						<input id=\"b1\" type=\"radio\" name=\"nm-send\" value=\"1\"><label for=\"b1\">Yes</label>\
-						<input id=\"b0\" type=\"radio\" name=\"nm-send\" value=\"0\"><label for=\"b0\">No</label><br>\
-						<input id=\"c1\" type=\"radio\" name=\"iot-send\" value=\"1\"><label for=\"c1\">Yes</label>\
-						<input id=\"d0\" type=\"radio\" name=\"iot-send\" value=\"0\"><label for=\"d0\">No</label><br><br>\
-						<input id=\"interval\" name=\"send-period\" style=\"width: 30px;\"></input><br>\
+						<input id=\"a1\" type=\"radio\" name=\"ts-send\" checked value=\"1\"><label for=\"a1\">Yes</label>\
+						<input id=\"a0\" type=\"radio\" name=\"ts-send\" " + check_sending(!ts_send) + " value=\"0\"><label for=\"a0\">No</label><br>\
+						<input id=\"b1\" type=\"radio\" name=\"nm-send\" checked value=\"1\"><label for=\"b1\">Yes</label>\
+						<input id=\"b0\" type=\"radio\" name=\"nm-send\" " + check_sending(!nm_send) + " value=\"0\"><label for=\"b0\">No</label><br>\
+						<input id=\"c1\" type=\"radio\" name=\"iot-send\" checked value=\"1\"><label for=\"c1\">Yes</label>\
+						<input id=\"d0\" type=\"radio\" name=\"iot-send\" " + check_sending(true) + " value=\"0\"><label for=\"d0\">No</label><br><br>\
+						<input id=\"interval\" name=\"send-period\" style=\"width: 30px;\" value=\"" + String(sendInterval) + "\"></input><br>\
 					</div><br>\
 				  <input type=\"submit\" id=\"\" value=\"Apply\"></input>\
 			  </form>\
@@ -433,6 +442,11 @@ void read_data(void) { // Reads data from ADC, bmp180, dht11/22, bht1750
 	
 	lux = lightMeter.readLightLevel()/1.2;
 	digitalWrite(led15, 0);
+}
+
+String check_sending(bool smth_send) { // Cтавит галочки в чекбоксах отправки данных
+	if (smth_send) return "checked";
+	return "";
 }
 
 void setup(void) {
