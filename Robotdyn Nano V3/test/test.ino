@@ -98,8 +98,6 @@ void setup()  {
 		Serial.println(t_m_stop[i]);
 		Serial.println();
 		Serial.println();
-		Serial.println();
-		Serial.println();
 		
 	}
 	
@@ -109,6 +107,54 @@ void setup()  {
 	
 	
 	TimeRead();
+	
+	Serial.println();
+	Serial.println();
+	
+	t_m_stop[0] = 0
+	t_h_stop[0] = 0
+	t_hours[0] = 
+	
+	
+	if (((current_t >= t_hours[0]*60 + t_hours[0]*60) && (current_t <= 24*60 + t_h_stop[0]*60 + t_m_stop[0]))||((current_t + 24*60 >= t_hours[0]*60 + t_hours[0])&&(current_t <= t_h_stop[0]*60 + t_m_stop[0]))) { // Too Hard to explain
+					
+					if (flag_nl) {
+						ledOn(wht);
+						flag_nl = 0; // Flag allows not to put LED to max value every time
+						Serial.println("Bug1");
+					}
+					
+					
+				} else {
+					
+					if (!flag_nl) {
+						ledOff(wht);
+						flag_nl = 0;
+						Serial.println("Bug2");
+					}
+					
+				}
+				
+			} else {
+		
+				if ((current_t >= t_hours[0]*60 + t_hours[0])&&(current_t <= t_h_stop[0]*60 + t_m_stop[0])) {
+					
+					if (flag_nl) {
+						ledOn(wht);
+						flag_nl = 0; // Flag allows not to put LED to max value every time
+						Serial.println("Bug3");
+					}
+					
+					
+				} else {
+					
+					if (!flag_nl) {
+						ledOff(wht);
+						flag_nl = 0;
+						Serial.println("Bug4");
+					}
+					
+				}
 }
  
 void loop()

@@ -4,7 +4,16 @@
 
 tmElements_t tm;
 
-bool trigger = 0;
+// Essential vars
+
+bool trigger = 0; // trigger for activating or deactivatinf TV imitator on alarms
+byte mode = 0; // Modes: TV imitator, Off, White light level1; White light level2; Smooth LED flashing; Red light; Green light; Blue light.
+bool flag=0; // Protection from bouncing
+bool case_flag = 1;
+
+// END essential vars
+
+// LEDSmooth vars
 
 unsigned long currentMillis; // Current time, to which previous times are compared
 
@@ -12,7 +21,7 @@ unsigned long previousMillis_red = 0; // Counter for checking intervals of each 
 unsigned long previousMillis_blu = 0; // 
 unsigned long previousMillis_grn = 0; //
 unsigned long previousMillis_wht = 0; //
-unsigned long previousMillis_alm = 0; // Counter for checking intervals of alarms and night light
+unsigned long previousMillis_alm = 0; // Counter for checking intervals of alarms and night-light
 unsigned long previousMillis[] = {previousMillis_red, previousMillis_blu, previousMillis_grn, previousMillis_wht, previousMillis_alm};
 
 byte red = 0; // Index of array of each led color
@@ -24,13 +33,13 @@ byte alm = 4;
 char* colours[] = {"red", "green", "blue", "white"};
 byte* ledpins[] = {11, 10, 9, 6}; // {red, grn, blu, wht};
 
-short prevpwm_red = 0; // PWM level that is gradually changing to newpwm
+short prevpwm_red = 0; // PWM level that is gradually changed to newpwm
 short prevpwm_grn = 0;
 short prevpwm_blu = 0;
 short prevpwm_wht = 0;
 short prevpwms[] = {prevpwm_red, prevpwm_grn, prevpwm_blu, prevpwm_wht};
 
-short newpwm_red = 0; // PWM level that is gradually changing to newpwm
+short newpwm_red = 0; // PWM level to which prevpwm is changed
 short newpwm_grn = 0;
 short newpwm_blu = 0;
 short newpwm_wht = 0;
@@ -53,6 +62,10 @@ short pwmfreeze_grn = 0;
 short pwmfreeze_blu = 0;
 short pwmfreeze_wht = 0;
 short pwmfreezes[] = {pwmfreeze_red, pwmfreeze_grn, pwmfreeze_blu, pwmfreeze_wht};
+
+
+// END LEDSmooth vars
+
 
 class Alarm {
 	
@@ -77,9 +90,12 @@ class Alarm {
  
 };
 
-Alarm alm1(ALM1_MATCH_HOURS, 0, 30, 20, 0);
-Alarm alm2(ALM2_MATCH_HOURS, 0, 45, 23, 0);
+Alarm alm1(ALM1_MATCH_HOURS, 0, 15, 20, 0);
+Alarm alm2(ALM2_MATCH_HOURS, 0, 30, 23, 0);
 Alarm alm_morning(ALM2_MATCH_HOURS, 0, 0, 8, 0);
+
+
+// Night-light vars
 
 short t_gap, current_t;
 
@@ -91,6 +107,9 @@ short t_minutes[nl_number];
 short t_duration[nl_number];
 short t_h_stop[nl_number];
 short t_m_stop[nl_number];
+
+bool flag_nl[nl_number] = {1, 1, 1, 1};
+// END Night-light vars
 
 
 void setup()  {
@@ -123,7 +142,127 @@ void loop()
 {
 	currentMillis = millis();
 	
-	if (currentMillis-previousMillis[alm]>30000) { // Checks for alarms every 30 secs
+	if((analogRead(1)>500)&&(flag==0)) {
+		flag=1;
+		case_flag = 1;
+	}
+
+	if((analogRead(1)<500)&&(flag==1)) {  
+		flag=0;
+		case_flag = 1;
+		mode++;
+		if(mode>7) mode=0;
+	}
+	
+	// Main menu
+	
+	switch (mode) {
+		case 0: if (case_flag) {
+			
+			ledOff(red);
+			ledOff(grn);
+			ledOff(blu);
+			ledOff(wht);
+			
+			if (((tm.Hour*60+tm.Minute)>=(alm1.Hours*60+alm1.Minutes))&& 
+				((tm.Hour*60+tm.Minute)<(alm2.Hours*60+alm2.Minutes))) { // Check if time of first alarm has already passed
+				trigger = true;
+				
+			}
+			
+			case_flag = 0;
+			
+		} 
+			
+			tvImitatorMode();
+		break;
+		case 1: if (case_flag) {
+			
+			ledOff(red);
+			ledOff(grn);
+			ledOff(blu);
+			ledOff(wht);
+			
+			case_flag = 0;
+			
+		}
+		break;
+		case 2: if (case_flag) {
+			
+			ledOn(wht);
+			
+			ledOff(red);
+			ledOff(grn);
+			ledOff(blu);
+			
+			case_flag = 0;
+		}
+		break;
+		case 3: if (case_flag) {
+			
+			ledOn(wht);
+			ledOn(red);
+			ledOn(grn);
+			ledOn(blu);
+			
+			case_flag = 0;
+		}
+		break;
+		case 4: 
+			ledSmooth(red, 3, 7);
+			ledSmooth(grn, 3, 7);
+			ledSmooth(blu, 3, 7);
+			ledSmooth(wht, 3, 7);
+		break;
+		case 5: if (case_flag) {
+			
+			ledOn(red);
+			
+			ledOff(grn);
+			ledOff(blu);
+			ledOff(wht);
+			
+			case_flag = 0;
+		}
+		break;
+		case 6: if (case_flag) {
+			
+			ledOn(grn);
+			
+			ledOff(red);
+			ledOff(blu);
+			ledOff(wht);
+			
+			case_flag = 0;
+		}
+		break;
+		case 7: if (case_flag) {
+			
+			ledOn(blu);
+			
+			ledOff(red);
+			ledOff(grn);
+			ledOff(wht);
+			
+			case_flag = 0;
+		}
+		break;
+	}
+	
+	// END Main menu
+}
+
+void TimeRead() { // Reads and prints current time on RTC
+      RTC.read(tm);
+      Serial.print(tm.Hour, DEC);
+      Serial.print(':');
+      Serial.print(tm.Minute,DEC);
+      Serial.print(':');
+      Serial.println(tm.Second,DEC);
+}
+
+void tvImitatorMode () {
+	if (currentMillis-previousMillis[alm]>30000) { // Check for alarms every 30 secs
 		
 		if ( RTC.alarm(ALARM_1) ) {     // has Alarm1 triggered?
 			trigger = 1;
@@ -145,12 +284,54 @@ void loop()
 		RTC.read(tm);
 		current_t = tm.Hour*60 + tm.Minute;
 		
-		for (byte i = 0; i < sizeof(tn)/sizeof(short); i++) { // Checking all night light times
+		for (byte i = 0; i < sizeof(tn)/sizeof(short); i++) { // Checking all night-light times
 		
-			if (current_t >= t_h_stop[i]*60 + t_m_stop[i]) {
-				ledOff(wht);
-			} else if (current_t >= t_hours[i]*60 + t_minutes[i]) {
-				ledOn(wht);
+			if (t_h_stop[i] < t_hours[i]) {
+				
+				if ((current_t >= t_hours[i]*60 + t_minutes[i]) || (current_t <= t_h_stop[i]*60 + t_m_stop[i])) { // Too Hard to explain
+					
+					if (flag_nl[i]) {
+						ledOn(wht);
+						flag_nl[i] = 0; // Flag allows not to put LED to max value every time
+						Serial.print(i);
+						Serial.println(" Bug1");
+					}
+					
+					
+				} else {
+					
+					if (!flag_nl[i]) {
+						ledOff(wht);
+						flag_nl[i] = 1;
+						Serial.print(i);
+						Serial.println(" Bug2");
+					}
+					
+				}
+				
+			} else {
+		
+				if ((current_t >= t_hours[i]*60 + t_minutes[i])&&(current_t <= t_h_stop[i]*60 + t_m_stop[i])) {
+					
+					if (flag_nl[i]) {
+						ledOn(wht);
+						flag_nl[i] = 0; // Flag allows not to put LED to max value every time
+						Serial.print(i);
+						Serial.println(" Bug3");
+					}
+					
+					
+				} else {
+					
+					if (!flag_nl[i]) {
+						ledOff(wht);
+						flag_nl[i] = 1;
+						Serial.print(i);
+						Serial.println(" Bug4");
+					}
+					
+				}
+				
 			}
 		}
 		
@@ -160,21 +341,12 @@ void loop()
 	tvImitatorTask();
 }
 
-void TimeRead() { // Reads and prints current time on RTC
-      RTC.read(tm);
-      Serial.print(tm.Hour, DEC);
-      Serial.print(':');
-      Serial.print(tm.Minute,DEC);
-      Serial.print(':');
-      Serial.println(tm.Second,DEC);
-}
-
 void tvImitatorTask() {
 	if (trigger) {
-		ledSmooth(red);
-		ledSmooth(grn);
-		ledSmooth(blu);
-		ledSmooth(wht);
+		ledSmooth(red, 1, 4);
+		ledSmooth(grn, 1, 4);
+		ledSmooth(blu, 1, 4);
+		ledSmooth(wht, 1, 4);
 	}
 }
 
@@ -186,16 +358,17 @@ void ledOn(byte pin) {
 	analogWrite(ledpins[pin], 255);
 }
  
-void ledSmooth(byte color, byte interval, )
+void ledSmooth(byte color, byte interval1, byte interval2)
 {
 	
 	if(currentMillis - previousMillis[color] > intervals[color]) {
+		
 		// сохраняем время последнего переключения
-			
+		
 		if (pwmfreezes[color] == prevpwms[color]) { // if current pwm "prevpwm" is equal to pwm that must be freezed "prevpwm"
 			if (currentMillis-previousMillis[color] > intervalfreezes[color]) { // if freezed pwm level stayed for specified time interval "intervalfreeze", we generate new interval of freezing and new pwm level of freezing. 
 				intervalfreezes[color] = random(1000, 10001);
-				pwmfreezes[color] = random(0, 240);
+				pwmfreezes[color] = random(0, 230);
 				//Serial.print("Match ");
 				//Serial.print(colours[color]);
 				//Serial.print(": ");
@@ -212,7 +385,7 @@ void ledSmooth(byte color, byte interval, )
 				analogWrite(ledpins[color], prevpwms[color]--);
 				//Serial.println(prevpwm);
 			} else {
-				intervals[color] = random(1,5);
+				intervals[color] = random(interval1, interval2);
 				prevpwms[color] = newpwms[color];
 				newpwms[color] = random(0, 256);
 			}
@@ -225,7 +398,9 @@ void ledSmooth(byte color, byte interval, )
 
 void nightLightGeneratorTask() {
 	
-	randomSeed(analogRead(0));
+	RTC.read(tm);
+	
+	randomSeed(analogRead(2));
 	
 	t_gap = (alm2.Hours*60+alm2.Minutes);
 	
@@ -239,7 +414,7 @@ void nightLightGeneratorTask() {
 	
 	for (byte i = 0; i < sizeof(tn)/sizeof(short); i++) {
 		
-		tn[i] = random(15, t_gap-15) + i*t_gap; // Times (in minutes) of starting night lights, counting from alm2
+		tn[i] = random(15, t_gap-15) + i*t_gap; // Times (in minutes) of starting night-lights, counting from alm2
 
 		t_hours[i] = tn[i] / 60;
 		t_hours[i] += alm2.Hours;
@@ -260,6 +435,7 @@ void nightLightGeneratorTask() {
 			t_h_stop[i]++;
 			t_m_stop[i] -= 60;
 		}
+		if (t_h_stop[i] >= 24) t_h_stop[i] -= 24;
 		
 		Serial.print("night-light ");
 		Serial.print(i);
