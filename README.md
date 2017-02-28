@@ -1,3 +1,3 @@
 # Arduino
 Repository to Arduino IDE<br>
-Projects mainly for ESP8266
+Projects for ESP8266 and Arduino Nano
