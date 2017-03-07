@@ -286,9 +286,8 @@ void tvImitatorMode () {
 		
 		for (byte i = 0; i < sizeof(tn)/sizeof(short); i++) { // Checking all night-light times
 		
-			if (t_h_stop[i] < t_hours[i]) {
+			if (t_h_stop[i] < t_hours[i]) { // When night-light starts before midnight and stops after midnight
 				
-				if ((current_t >= t_hours[i]*60 + t_minutes[i]) || (current_t <= t_h_stop[i]*60 + t_m_stop[i])) { // Too Hard to explain
 					
 					if (flag_nl[i]) {
 						ledOn(wht);
@@ -315,7 +314,7 @@ void tvImitatorMode () {
 					
 					if (flag_nl[i]) {
 						ledOn(wht);
-						flag_nl[i] = 0; // Flag allows not to put LED to max value every time
+						flag_nl[i] = 0; // Flag allows not to put LED level to max value every time
 						Serial.print(i);
 						Serial.println(" Bug3");
 					}
