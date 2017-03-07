@@ -66,7 +66,6 @@ short pwmfreezes[] = {pwmfreeze_red, pwmfreeze_grn, pwmfreeze_blu, pwmfreeze_wht
 
 // END LEDSmooth vars
 
-
 class Alarm {
 	
 	public:
@@ -77,11 +76,29 @@ class Alarm {
 	byte Minutes;
 	byte Seconds;
 	
-	Alarm (ALARM_TYPES_t type, byte seconds, byte minutes, byte hours, byte date)
+	Alarm (ALARM_TYPES_t type, byte seconds, byte minutes, byte hours, byte date, bool randomize)
 	{
-		Type = type;    
+		
+		if (randomize) {
+			short time;
+			
+			time = hours*60 + minutes - 30 + random(0, 60); // Shifts alarm time for random value
+			
+			hours = time / 60;
+			minutes = time % 60;
 
+			if (minutes >= 60) {
+				hours++;
+				minutes -= 60;
+			}
+			
+			if (hours >= 24) hours -= 24;
+		}
+		
+		Type = type;
+		
 		Date = date;
+
 		Hours = hours;
 
 		Minutes = minutes; 
@@ -90,10 +107,16 @@ class Alarm {
  
 };
 
-Alarm alm1(ALM1_MATCH_HOURS, 0, 15, 20, 0);
-Alarm alm2(ALM2_MATCH_HOURS, 0, 30, 23, 0);
-Alarm alm_morning(ALM2_MATCH_HOURS, 0, 0, 8, 0);
+	// Set TV Alarm times
+	
+	Alarm alm1(ALM1_MATCH_HOURS, 0, 0, 0, 0, 0);
+	
+	Alarm alm2(ALM2_MATCH_HOURS, 0, 0, 0, 0, 0);
 
+	Alarm alm_morning(ALM2_MATCH_HOURS, 0, 0, 0, 0, 0);
+
+
+	// END Set TV Alarm times
 
 // Night-light vars
 
@@ -109,16 +132,24 @@ short t_h_stop[nl_number];
 short t_m_stop[nl_number];
 
 bool flag_nl[nl_number] = {1, 1, 1, 1};
+
 // END Night-light vars
 
 
 void setup()  {
 	Serial.begin(9600);
+	randomSeed(analogRead(2));
 
 	pinMode(red, OUTPUT);           
 	pinMode(grn, OUTPUT);        
 	pinMode(blu, OUTPUT); 
-	pinMode(wht, OUTPUT); 
+	pinMode(wht, OUTPUT);
+	
+	Alarm alm1(ALM1_MATCH_HOURS, 0, 15, 20, 0, 1);
+	
+	Alarm alm2(ALM2_MATCH_HOURS, 0, 50, 23, 0, 1);
+
+	Alarm alm_morning(ALM2_MATCH_HOURS, 0, 0, 8, 0, 0);
 
 	RTC.setAlarm(alm1.Type, alm1.Seconds, alm1.Minutes, alm1.Hours, alm1.Date);
 	RTC.setAlarm(alm2.Type, alm2.Seconds, alm2.Minutes, alm2.Hours, alm2.Date);
@@ -136,6 +167,17 @@ void setup()  {
 	
 	Serial.println("Started at:");
 	TimeRead();
+	
+	Serial.println("Alarm 1 at:");
+	Serial.print(alm1.Hours);
+	Serial.print(":");
+	Serial.println(alm1.Minutes);
+	
+	Serial.println("Alarm 2 at:");
+	Serial.print(alm2.Hours);
+	Serial.print(":");
+	Serial.println(alm2.Minutes);
+	
 }
  
 void loop()
@@ -288,6 +330,7 @@ void tvImitatorMode () {
 		
 			if (t_h_stop[i] < t_hours[i]) { // When night-light starts before midnight and stops after midnight
 				
+				if ((current_t >= t_hours[i]*60 + t_minutes[i]) || (current_t <= t_h_stop[i]*60 + t_m_stop[i])) {
 					
 					if (flag_nl[i]) {
 						ledOn(wht);
