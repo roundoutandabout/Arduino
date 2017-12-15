@@ -180,7 +180,7 @@ void setup()  {
 	
 	nightLightGeneratorTask();
 	
-	Serial.println("Started at:");
+	/*Serial.println("Started at:");
 	TimeRead();
 	Serial.println();
 	
@@ -192,7 +192,7 @@ void setup()  {
 	Serial.println("Alarm 2 at:");
 	Serial.print(alm2.Hours);
 	Serial.print(":");
-	Serial.println(alm2.Minutes);
+	Serial.println(alm2.Minutes);*/
 	
 }
  
@@ -336,7 +336,7 @@ void tvImitatorMode () {
 		if ( RTC.alarm(ALARM_1) ) {     // has Alarm1 triggered?
 			trigger = 1;
 			
-			TimeRead();
+			//TimeRead();
 		} else if ( RTC.alarm(ALARM_2) ) {     // has Alarm2 triggered?
 			trigger = 0;
 
@@ -347,7 +347,7 @@ void tvImitatorMode () {
 			
 			nightLightGeneratorTask();
 
-			TimeRead();
+			//TimeRead();
 		}
 		
 		RTC.read(tm);
@@ -362,8 +362,8 @@ void tvImitatorMode () {
 					if (flag_nl[i]) {
 						ledOn(wht);
 						flag_nl[i] = 0; // Flag allows not to put LED to max value every time
-						Serial.print(i);
-						Serial.println(" Bug1");
+						/*Serial.print(i);
+						Serial.println(" Bug1");*/
 					}
 					
 					
@@ -372,8 +372,8 @@ void tvImitatorMode () {
 					if (!flag_nl[i]) {
 						ledOff(wht);
 						flag_nl[i] = 1;
-						Serial.print(i);
-						Serial.println(" Bug2");
+						/*Serial.print(i);
+						Serial.println(" Bug2");*/
 					}
 					
 				}
@@ -385,8 +385,8 @@ void tvImitatorMode () {
 					if (flag_nl[i]) {
 						ledOn(wht);
 						flag_nl[i] = 0; // Flag allows not to put LED level to max value every time
-						Serial.print(i);
-						Serial.println(" Bug3");
+						/*Serial.print(i);
+						Serial.println(" Bug3");*/
 					}
 					
 					
@@ -395,8 +395,8 @@ void tvImitatorMode () {
 					if (!flag_nl[i]) {
 						ledOff(wht);
 						flag_nl[i] = 1;
-						Serial.print(i);
-						Serial.println(" Bug4");
+						/*Serial.print(i);
+						Serial.println(" Bug4");*/
 					}
 					
 				}
@@ -449,10 +449,8 @@ void ledSmooth(byte color, byte minInterval, byte maxInterval, byte minPWM, byte
 			
 			if (newpwms[color]>prevpwms[color]) {
 				analogWrite(ledpins[color], prevpwms[color]++);
-				//Serial.println(prevpwm);
 			} else if (newpwms[color]<prevpwms[color]) {
 				analogWrite(ledpins[color], prevpwms[color]--);
-				//Serial.println(prevpwm);
 			} else {
 				intervals[color] = random(minInterval, maxInterval);
 				prevpwms[color] = newpwms[color];
@@ -504,7 +502,7 @@ void nightLightGeneratorTask() {  // Defines times for switching on night-light.
 		}
 		if (t_h_stop[i] >= 24) t_h_stop[i] -= 24;
 		
-		Serial.print("night-light ");
+		/*Serial.print("night-light ");
 		Serial.print(i);
 		Serial.println(" starts at:");
 		Serial.print(t_hours[i]);
@@ -517,8 +515,7 @@ void nightLightGeneratorTask() {  // Defines times for switching on night-light.
 		Serial.println(t_m_stop[i]);
 		Serial.println();
 		Serial.println();
-		Serial.println();
-		Serial.println();
+		Serial.println();*/
 		
 	}
 }
